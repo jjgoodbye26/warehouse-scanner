@@ -468,6 +468,7 @@
 
       btn.disabled = true; btn.textContent = 'Creating…';
 
+      // Step 1: Create auth user
       const { data, error } = await db.auth.signUp({
         email: usernameToEmail(username),
         password,
@@ -479,6 +480,21 @@
         alertEl.classList.remove('hidden');
         btn.disabled = false; btn.textContent = 'Create Account';
         return;
+      }
+
+      // Step 2: Manually insert profile (trigger was removed for reliability)
+      if (data.user) {
+        const { error: profileError } = await db.from('profiles').insert({
+          id: data.user.id,
+          username,
+          role,
+        });
+        if (profileError && !profileError.message.includes('duplicate')) {
+          alertEl.textContent = 'Account created but profile failed: ' + profileError.message;
+          alertEl.classList.remove('hidden');
+          btn.disabled = false; btn.textContent = 'Create Account';
+          return;
+        }
       }
 
       closeAddPackerModal();
