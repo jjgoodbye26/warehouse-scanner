@@ -347,24 +347,23 @@
         });
 
         const videoEl = document.getElementById('camera-video');
-
-        // Get back camera
-        const devices = await ZXing.BrowserCodeReader.listVideoInputDevices();
-        const backCam = devices.find(d => /back|rear|environment/i.test(d.label)) || devices[devices.length - 1];
-        const deviceId = backCam ? backCam.deviceId : undefined;
-
         setCamStatus('Ready — center the USPS barcode in the box', 'detecting');
 
-        await zxingReader.decodeFromVideoDevice(deviceId, videoEl, async (result, err) => {
-          if (result) {
-            const tracking = result.getText().trim();
-            setCamStatus('✓ Scanned: ' + tracking, 'success');
-            playBeep('success');
-            await closeCamera();
-            await submitScanValue(tracking);
+        // Use environment (back) camera directly via constraints
+        await zxingReader.decodeFromConstraints(
+          { video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } } },
+          videoEl,
+          async (result, err) => {
+            if (result) {
+              const tracking = result.getText().trim();
+              setCamStatus('✓ Scanned: ' + tracking, 'success');
+              playBeep('success');
+              await closeCamera();
+              await submitScanValue(tracking);
+            }
+            // err fires continuously while scanning — ignore it
           }
-          // err fires continuously while scanning — ignore it
-        });
+        );
 
       } catch (e) {
         setCamStatus('Camera error: ' + e.message, '');
