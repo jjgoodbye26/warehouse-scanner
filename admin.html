@@ -468,7 +468,10 @@
 
       btn.disabled = true; btn.textContent = 'Creating…';
 
-      // Step 1: Create auth user
+      // Save admin session before signUp switches it
+      const { data: { session: adminSession } } = await db.auth.getSession();
+
+      // Step 1: Create auth user (this switches session to the new user)
       const { data, error } = await db.auth.signUp({
         email: usernameToEmail(username),
         password,
@@ -482,7 +485,7 @@
         return;
       }
 
-      // Step 2: Manually insert profile (trigger was removed for reliability)
+      // Step 2: Insert profile while session is the new user (RLS: user can insert own profile)
       if (data.user) {
         const { error: profileError } = await db.from('profiles').insert({
           id: data.user.id,
@@ -490,11 +493,19 @@
           role,
         });
         if (profileError && !profileError.message.includes('duplicate')) {
-          alertEl.textContent = 'Account created but profile failed: ' + profileError.message;
+          alertEl.textContent = 'Profile error: ' + profileError.message;
           alertEl.classList.remove('hidden');
           btn.disabled = false; btn.textContent = 'Create Account';
           return;
         }
+      }
+
+      // Step 3: Restore admin session
+      if (adminSession) {
+        await db.auth.setSession({
+          access_token: adminSession.access_token,
+          refresh_token: adminSession.refresh_token,
+        });
       }
 
       closeAddPackerModal();
