@@ -14,17 +14,28 @@
     }
     .camera-overlay.hidden { display: none; }
 
-    #camera-video {
+    #camera-container {
       width: 100%;
       flex: 1;
-      object-fit: cover;
-      display: block;
+      background: #000;
+      position: relative;
+      overflow: hidden;
+    }
+
+    #camera-container video {
+      width: 100% !important;
+      height: 100% !important;
+      object-fit: cover !important;
+    }
+
+    #camera-container canvas {
+      display: none !important;
     }
 
     .camera-aim {
       position: absolute;
-      top: 50%; left: 50%;
-      transform: translate(-50%, -55%);
+      top: 45%; left: 50%;
+      transform: translate(-50%, -50%);
       width: 88%;
       max-width: 480px;
       height: 90px;
@@ -56,8 +67,8 @@
     /* Animated scan line */
     .scan-line {
       position: absolute;
-      top: 50%; left: 50%;
-      transform: translate(-50%, -55%);
+      top: 45%; left: 50%;
+      transform: translate(-50%, -50%);
       width: 88%;
       max-width: 480px;
       height: 2px;
@@ -247,8 +258,8 @@
 
   <!-- Full-screen camera overlay -->
   <div id="camera-overlay" class="camera-overlay hidden">
-    <!-- Live video -->
-    <video id="camera-video" autoplay muted playsinline></video>
+    <!-- Quagga2 injects its own video into this div -->
+    <div id="camera-container"></div>
 
     <!-- Visual overlays -->
     <div class="camera-shade"></div>
@@ -331,7 +342,7 @@
         inputStream: {
           name: 'Live',
           type: 'LiveStream',
-          target: document.getElementById('camera-video'),
+          target: document.getElementById('camera-container'),
           constraints: {
             facingMode: 'environment',
             width:  { min: 640, ideal: 1920, max: 1920 },
