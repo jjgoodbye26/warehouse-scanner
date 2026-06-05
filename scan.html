@@ -272,7 +272,7 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-  <script src="https://unpkg.com/@zxing/library@0.20.0/umd/index.min.js"></script>
+  <script src="https://unpkg.com/@zxing/library@0.18.6/umd/index.min.js"></script>
   <script src="js/config.js"></script>
   <script src="js/auth.js"></script>
   <script>
@@ -341,29 +341,30 @@
         ]);
         hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
 
-        zxingReader = new ZXing.BrowserMultiFormatReader(hints, {
-          delayBetweenScanAttempts: 100,
-          delayBetweenScanSuccess: 500,
-        });
+        zxingReader = new ZXing.BrowserMultiFormatReader(hints);
 
         const videoEl = document.getElementById('camera-video');
         setCamStatus('Ready — center the USPS barcode in the box', 'detecting');
 
-        // Use environment (back) camera directly via constraints
-        await zxingReader.decodeFromConstraints(
-          { video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } } },
-          videoEl,
-          async (result, err) => {
-            if (result) {
-              const tracking = result.getText().trim();
-              setCamStatus('✓ Scanned: ' + tracking, 'success');
-              playBeep('success');
-              await closeCamera();
-              await submitScanValue(tracking);
-            }
-            // err fires continuously while scanning — ignore it
+        // Get back camera, fall back to any camera
+        let deviceId = undefined;
+        try {
+          const devices = await zxingReader.listVideoInputDevices();
+          if (devices && devices.length > 0) {
+            const back = devices.find(d => /back|rear|environment/i.test(d.label));
+            deviceId = back ? back.deviceId : devices[devices.length - 1].deviceId;
           }
-        );
+        } catch(e) { /* use default camera */ }
+
+        zxingReader.decodeFromVideoDevice(deviceId, videoEl, async (result, err) => {
+          if (result) {
+            const tracking = result.getText().trim();
+            setCamStatus('✓ Scanned: ' + tracking, 'success');
+            playBeep('success');
+            await closeCamera();
+            await submitScanValue(tracking);
+          }
+        });
 
       } catch (e) {
         setCamStatus('Camera error: ' + e.message, '');
