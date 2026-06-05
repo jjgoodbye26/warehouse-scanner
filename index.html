@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Warehouse Scanner — Login</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="login-page">
+    <div class="login-box">
+
+      <div class="login-logo">
+        <div class="login-icon-wrap"><img src="logo.png" alt="Goodbye Inventory" style="height:72px;" /></div>
+        <p style="margin-top:16px;color:var(--text3);">Sign in to start packing</p>
+      </div>
+
+      <div class="card card-glow">
+        <div id="alert" class="alert alert-error hidden">
+          <span>⚠</span> <span id="alert-msg"></span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="username">Username</label>
+          <input type="text" id="username" class="form-input" placeholder="Enter your username"
+                 autocomplete="username" autocapitalize="off" autocorrect="off" />
+        </div>
+
+        <div class="form-group" style="margin-bottom:24px;">
+          <label class="form-label" for="password">Password</label>
+          <input type="password" id="password" class="form-input" placeholder="Enter your password"
+                 autocomplete="current-password" />
+        </div>
+
+        <button id="login-btn" class="btn btn-primary btn-full btn-xl" onclick="doLogin()">
+          Sign In →
+        </button>
+      </div>
+
+      <p style="text-align:center;margin-top:20px;font-size:0.78rem;color:var(--text3);">
+        Contact your admin if you don't have an account
+      </p>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    (async () => {
+      const session = await getSession();
+      if (session) {
+        const profile = await getProfile();
+        if (profile) window.location.href = profile.role === 'admin' ? 'admin.html' : 'scan.html';
+      }
+    })();
+
+    function showAlert(msg) {
+      const el = document.getElementById('alert');
+      document.getElementById('alert-msg').textContent = msg;
+      el.classList.remove('hidden');
+    }
+
+    async function doLogin() {
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+      const btn = document.getElementById('login-btn');
+      document.getElementById('alert').classList.add('hidden');
+
+      if (!username || !password) { showAlert('Please enter your username and password.'); return; }
+
+      btn.disabled = true;
+      btn.textContent = 'Signing in…';
+
+      const email = usernameToEmail(username);
+      const { data, error } = await db.auth.signInWithPassword({ email, password });
+
+      if (error) {
+        showAlert('Invalid username or password.');
+        btn.disabled = false;
+        btn.innerHTML = 'Sign In →';
+        return;
+      }
+
+      const { data: profile } = await db.from('profiles').select('role').eq('id', data.user.id).single();
+      window.location.href = profile?.role === 'admin' ? 'admin.html' : 'scan.html';
+    }
+
+    document.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+  </script>
+</body>
+</html>

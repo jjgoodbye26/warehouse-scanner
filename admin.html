@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Warehouse Scanner — Admin</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <header class="header">
+    <a class="header-brand" href="admin.html">
+      <div class="logo-wrap"><img src="logo.png" alt="Goodbye Inventory" /></div>
+      <span class="admin-chip">Admin</span>
+    </a>
+    <div class="header-right">
+      <button class="btn btn-primary btn-sm" onclick="openAddPackerModal()">+ Add Packer</button>
+      <button class="btn btn-ghost btn-sm" onclick="signOut()">Sign Out</button>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="admin-page">
+
+      <div class="admin-hero">
+        <div class="admin-hero-text">
+          <h1>Admin <span>Dashboard</span></h1>
+          <p>Live packing performance across your team</p>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <div style="font-size:0.78rem;color:var(--text3);padding:8px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;" id="live-clock"></div>
+        </div>
+      </div>
+
+      <!-- Top stats -->
+      <div class="admin-stats">
+        <div class="stat-card green">
+          <span class="stat-icon">📦</span>
+          <div class="stat-num" id="stat-today">—</div>
+          <div class="stat-label">Total Today</div>
+        </div>
+        <div class="stat-card purple">
+          <span class="stat-icon">📅</span>
+          <div class="stat-num" id="stat-week">—</div>
+          <div class="stat-label">This Week</div>
+        </div>
+        <div class="stat-card orange">
+          <span class="stat-icon">🟠</span>
+          <div class="stat-num" id="stat-whatnot">—</div>
+          <div class="stat-label">WhatNot Today</div>
+        </div>
+        <div class="stat-card teal">
+          <span class="stat-icon">🎵</span>
+          <div class="stat-num" id="stat-tiktok">—</div>
+          <div class="stat-label">TikTok Today</div>
+        </div>
+        <div class="stat-card">
+          <span class="stat-icon">👥</span>
+          <div class="stat-num" id="stat-packers">—</div>
+          <div class="stat-label">Active Packers</div>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab('overview')">Overview</button>
+        <button class="tab" onclick="switchTab('scans')">All Scans</button>
+        <button class="tab" onclick="switchTab('packers')">Packers</button>
+      </div>
+
+      <!-- ── TAB: Overview ── -->
+      <div id="tab-overview" class="tab-panel active">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px;">
+          <div class="section-label" style="margin:0;">Packer Performance</div>
+          <select id="overview-date-filter" class="form-select"
+            style="width:auto;padding:8px 14px;font-size:0.83rem;border-radius:8px;" onchange="loadOverview()">
+            <option value="today">Today</option>
+            <option value="week">This Week</option>
+            <option value="all">All Time</option>
+          </select>
+        </div>
+        <div id="packer-cards" class="packer-grid"></div>
+      </div>
+
+      <!-- ── TAB: All Scans ── -->
+      <div id="tab-scans" class="tab-panel">
+        <div class="filters">
+          <div class="form-group">
+            <label class="form-label">Packer</label>
+            <select id="filter-packer" class="form-select" onchange="loadScans()">
+              <option value="">All Packers</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Platform</label>
+            <select id="filter-platform" class="form-select" onchange="loadScans()">
+              <option value="">All Platforms</option>
+              <option value="WhatNot">WhatNot</option>
+              <option value="TikTok">TikTok</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">From Date</label>
+            <input type="date" id="filter-from" class="form-input" onchange="loadScans()" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">To Date</label>
+            <input type="date" id="filter-to" class="form-input" onchange="loadScans()" />
+          </div>
+          <div class="filters-actions">
+            <button class="btn btn-ghost btn-sm" onclick="clearFilters()">Clear</button>
+            <button class="btn btn-primary btn-sm" onclick="exportCSV()">⬇ CSV</button>
+          </div>
+        </div>
+
+        <div class="count-chip" id="scans-count"></div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Packer</th>
+                <th>Tracking Number</th>
+                <th>Platform</th>
+                <th>Date</th>
+                <th>Time</th>
+              </tr>
+            </thead>
+            <tbody id="scans-tbody"></tbody>
+          </table>
+        </div>
+        <div id="scans-empty" class="empty-state hidden">
+          <div class="empty-icon">🔍</div>
+          <p>No scans match your filters.</p>
+        </div>
+      </div>
+
+      <!-- ── TAB: Packers ── -->
+      <div id="tab-packers" class="tab-panel">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Packer</th>
+                <th>Role</th>
+                <th>Joined</th>
+                <th>Today</th>
+                <th>All Time</th>
+              </tr>
+            </thead>
+            <tbody id="packers-tbody"></tbody>
+          </table>
+        </div>
+        <div id="packers-empty" class="empty-state hidden">
+          <div class="empty-icon">👥</div>
+          <p>No packers yet. Add one with the button above.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Add Packer Modal -->
+  <div id="add-packer-modal" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-title">Add New Packer</div>
+      <div class="modal-subtitle">Create a login for a team member. They sign in with username + password only.</div>
+      <div id="modal-alert" class="alert alert-error hidden"></div>
+      <div class="form-group">
+        <label class="form-label">Username</label>
+        <input type="text" id="new-username" class="form-input" placeholder="e.g. sarah_k"
+               autocapitalize="off" autocorrect="off" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input type="password" id="new-password" class="form-input" placeholder="Minimum 6 characters" />
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">Role</label>
+        <select id="new-role" class="form-select">
+          <option value="packer">Packer</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeAddPackerModal()">Cancel</button>
+        <button class="btn btn-primary" id="add-packer-btn" onclick="addPacker()">Create Account</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    let allScans = [], allPackers = [], currentAdmin = null;
+
+    // Live clock
+    function updateClock() {
+      document.getElementById('live-clock').textContent =
+        new Date().toLocaleString([], { weekday:'short', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+    }
+    updateClock(); setInterval(updateClock, 30000);
+
+    (async () => {
+      currentAdmin = await requireAuth('admin');
+      if (!currentAdmin) return;
+      await Promise.all([loadAdminStats(), loadOverview(), loadPackerList()]);
+      setDefaultDates();
+    })();
+
+    function setDefaultDates() {
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('filter-from').value = today;
+      document.getElementById('filter-to').value = today;
+    }
+
+    // ── Tabs ──
+    function switchTab(name) {
+      document.querySelectorAll('.tab').forEach((t, i) => {
+        t.classList.toggle('active', ['overview','scans','packers'][i] === name);
+      });
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      document.getElementById('tab-' + name).classList.add('active');
+      if (name === 'scans') loadScans();
+      if (name === 'packers') loadPackersTab();
+    }
+
+    // ── Top stats ──
+    async function loadAdminStats() {
+      const { start: ts, end: te } = todayRange();
+      const { start: ws } = weekRange();
+      const [todayRes, weekRes] = await Promise.all([
+        db.from('scans').select('platform').gte('scanned_at', ts).lt('scanned_at', te),
+        db.from('scans').select('id', { count:'exact' }).gte('scanned_at', ws),
+      ]);
+      const td = todayRes.data || [];
+      document.getElementById('stat-today').textContent = td.length;
+      document.getElementById('stat-whatnot').textContent = td.filter(s => s.platform === 'WhatNot').length;
+      document.getElementById('stat-tiktok').textContent  = td.filter(s => s.platform === 'TikTok').length;
+      document.getElementById('stat-week').textContent    = weekRes.count || 0;
+      const packerIds = new Set((await db.from('scans').select('packer_id').gte('scanned_at', ts).lt('scanned_at', te)).data?.map(s => s.packer_id));
+      document.getElementById('stat-packers').textContent = packerIds.size;
+    }
+
+    // ── Overview ──
+    async function loadOverview() {
+      const filter = document.getElementById('overview-date-filter').value;
+      let start, end;
+      if (filter === 'today') { ({ start, end } = todayRange()); }
+      else if (filter === 'week') { ({ start } = weekRange()); end = new Date(Date.now() + 86400000).toISOString(); }
+      else { start = '2000-01-01'; end = new Date(Date.now() + 86400000).toISOString(); }
+
+      const [scansRes, packersRes] = await Promise.all([
+        db.from('scans').select('*').gte('scanned_at', start).lt('scanned_at', end).order('scanned_at'),
+        db.from('profiles').select('*').eq('role', 'packer'),
+      ]);
+      const scans = scansRes.data || [];
+      const packers = packersRes.data || [];
+      const container = document.getElementById('packer-cards');
+
+      if (packers.length === 0) {
+        container.innerHTML = `<div class="empty-state"><div class="empty-icon">👥</div><p>No packers yet. Add one above.</p></div>`;
+        return;
+      }
+
+      // Sort by most scans first
+      packers.sort((a, b) => {
+        const countA = scans.filter(s => s.packer_id === a.id).length;
+        const countB = scans.filter(s => s.packer_id === b.id).length;
+        return countB - countA;
+      });
+
+      const maxScans = Math.max(...packers.map(p => scans.filter(s => s.packer_id === p.id).length), 1);
+
+      container.innerHTML = packers.map(p => {
+        const pScans = scans.filter(s => s.packer_id === p.id);
+        const whatnot = pScans.filter(s => s.platform === 'WhatNot').length;
+        const tiktok  = pScans.filter(s => s.platform === 'TikTok').length;
+        let perHour = '—';
+        if (pScans.length >= 2) {
+          const times = pScans.map(s => new Date(s.scanned_at).getTime());
+          const span = (Math.max(...times) - Math.min(...times)) / 3600000;
+          if (span > 0) perHour = (pScans.length / span).toFixed(1);
+        }
+        const pct = Math.round((pScans.length / maxScans) * 100);
+        const initial = p.username.charAt(0).toUpperCase();
+
+        return `
+          <div class="packer-card">
+            <div class="packer-card-top">
+              <div class="packer-avatar">${initial}</div>
+              <div>
+                <div class="packer-card-name">${p.username}</div>
+                <div class="packer-card-role">Packer</div>
+              </div>
+            </div>
+            <div class="packer-mini-stats">
+              <div class="packer-mini-stat">
+                <div class="packer-mini-num purple">${pScans.length}</div>
+                <div class="packer-mini-label">Total</div>
+              </div>
+              <div class="packer-mini-stat">
+                <div class="packer-mini-num orange">${whatnot}</div>
+                <div class="packer-mini-label">WhatNot</div>
+              </div>
+              <div class="packer-mini-stat">
+                <div class="packer-mini-num teal">${tiktok}</div>
+                <div class="packer-mini-label">TikTok</div>
+              </div>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" style="width:${pct}%"></div>
+            </div>
+            <div class="packer-footer">
+              <span>Orders / hr</span>
+              <div class="packer-rate">
+                <span class="rate-num">${perHour}</span>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ── Scans tab ──
+    async function loadScans() {
+      const packer   = document.getElementById('filter-packer').value;
+      const platform = document.getElementById('filter-platform').value;
+      const from     = document.getElementById('filter-from').value;
+      const to       = document.getElementById('filter-to').value;
+
+      let q = db.from('scans').select('*').order('scanned_at', { ascending: false }).limit(500);
+      if (packer)   q = q.eq('packer_username', packer);
+      if (platform) q = q.eq('platform', platform);
+      if (from)     q = q.gte('scanned_at', from + 'T00:00:00');
+      if (to)       q = q.lte('scanned_at', to + 'T23:59:59');
+
+      const { data, error } = await q;
+      if (error) return;
+      allScans = data || [];
+      renderScansTable(allScans);
+      populatePackerFilter(allScans);
+    }
+
+    function renderScansTable(scans) {
+      const tbody = document.getElementById('scans-tbody');
+      const empty = document.getElementById('scans-empty');
+      const count = document.getElementById('scans-count');
+      count.textContent = scans.length + ' scan' + (scans.length !== 1 ? 's' : '');
+      if (scans.length === 0) {
+        tbody.innerHTML = '';
+        empty.classList.remove('hidden');
+        return;
+      }
+      empty.classList.add('hidden');
+      tbody.innerHTML = scans.map(s => `
+        <tr>
+          <td class="packer-cell">${s.packer_username}</td>
+          <td class="tracking-cell">${s.tracking_number}</td>
+          <td><span class="badge badge-${s.platform === 'WhatNot' ? 'whatnot' : 'tiktok'}">${s.platform}</span></td>
+          <td style="color:var(--text2)">${formatDate(s.scanned_at)}</td>
+          <td style="color:var(--text2);font-variant-numeric:tabular-nums">${formatTime(s.scanned_at)}</td>
+        </tr>
+      `).join('');
+    }
+
+    function populatePackerFilter(scans) {
+      const sel = document.getElementById('filter-packer');
+      const cur = sel.value;
+      const names = [...new Set(scans.map(s => s.packer_username))].sort();
+      sel.innerHTML = '<option value="">All Packers</option>' +
+        names.map(n => `<option value="${n}" ${n === cur ? 'selected' : ''}>${n}</option>`).join('');
+    }
+
+    function clearFilters() {
+      document.getElementById('filter-packer').value = '';
+      document.getElementById('filter-platform').value = '';
+      setDefaultDates();
+      loadScans();
+    }
+
+    function exportCSV() {
+      if (!allScans.length) { showToast('No data to export', 'error'); return; }
+      const rows = allScans.map(s => ({
+        packer: s.packer_username, tracking_number: s.tracking_number,
+        platform: s.platform, date: formatDate(s.scanned_at),
+        time: formatTime(s.scanned_at), scanned_at: s.scanned_at,
+      }));
+      downloadCSV(rows, ['packer','tracking_number','platform','date','time','scanned_at'],
+        `scans-${new Date().toISOString().slice(0,10)}.csv`);
+      showToast('CSV downloaded!', 'success');
+    }
+
+    // ── Packers tab ──
+    async function loadPackerList() {
+      const { data } = await db.from('profiles').select('*').order('created_at');
+      allPackers = data || [];
+    }
+
+    async function loadPackersTab() {
+      await loadPackerList();
+      const { start: ts, end: te } = todayRange();
+      const [todayRes, totalRes] = await Promise.all([
+        db.from('scans').select('packer_id').gte('scanned_at', ts).lt('scanned_at', te),
+        db.from('scans').select('packer_id'),
+      ]);
+      const todayCounts = {}, totalCounts = {};
+      (todayRes.data || []).forEach(s => { todayCounts[s.packer_id] = (todayCounts[s.packer_id] || 0) + 1; });
+      (totalRes.data  || []).forEach(s => { totalCounts[s.packer_id] = (totalCounts[s.packer_id] || 0) + 1; });
+
+      const tbody = document.getElementById('packers-tbody');
+      const empty = document.getElementById('packers-empty');
+      if (!allPackers.length) { tbody.innerHTML = ''; empty.classList.remove('hidden'); return; }
+      empty.classList.add('hidden');
+
+      tbody.innerHTML = allPackers.map(p => {
+        const initial = p.username.charAt(0).toUpperCase();
+        return `
+          <tr>
+            <td>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div class="packer-avatar" style="width:30px;height:30px;border-radius:8px;font-size:0.8rem;">${initial}</div>
+                <span class="packer-cell">${p.username}</span>
+              </div>
+            </td>
+            <td><span class="badge badge-${p.role === 'admin' ? 'admin' : 'packer'}">${p.role}</span></td>
+            <td style="color:var(--text2)">${formatDate(p.created_at)}</td>
+            <td style="font-weight:700;color:var(--accent2)">${todayCounts[p.id] || 0}</td>
+            <td style="color:var(--text2)">${(totalCounts[p.id] || 0).toLocaleString()}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // ── Add Packer Modal ──
+    function openAddPackerModal() {
+      document.getElementById('add-packer-modal').classList.remove('hidden');
+      document.getElementById('new-username').value = '';
+      document.getElementById('new-password').value = '';
+      document.getElementById('new-role').value = 'packer';
+      document.getElementById('modal-alert').classList.add('hidden');
+      setTimeout(() => document.getElementById('new-username').focus(), 100);
+    }
+
+    function closeAddPackerModal() {
+      document.getElementById('add-packer-modal').classList.add('hidden');
+    }
+
+    document.getElementById('add-packer-modal').addEventListener('click', function(e) {
+      if (e.target === this) closeAddPackerModal();
+    });
+
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAddPackerModal(); });
+
+    async function addPacker() {
+      const username = document.getElementById('new-username').value.trim().toLowerCase();
+      const password = document.getElementById('new-password').value;
+      const role     = document.getElementById('new-role').value;
+      const btn      = document.getElementById('add-packer-btn');
+      const alertEl  = document.getElementById('modal-alert');
+
+      alertEl.classList.add('hidden');
+
+      if (!username || !password) { alertEl.textContent = 'Username and password are required.'; alertEl.classList.remove('hidden'); return; }
+      if (password.length < 6)    { alertEl.textContent = 'Password must be at least 6 characters.'; alertEl.classList.remove('hidden'); return; }
+      if (!/^[a-z0-9_]+$/.test(username)) { alertEl.textContent = 'Username: letters, numbers, underscores only.'; alertEl.classList.remove('hidden'); return; }
+
+      btn.disabled = true; btn.textContent = 'Creating…';
+
+      const { data, error } = await db.auth.signUp({
+        email: usernameToEmail(username),
+        password,
+        options: { data: { username, role } }
+      });
+
+      if (error) {
+        alertEl.textContent = error.message.includes('already registered') ? 'That username is already taken.' : 'Error: ' + error.message;
+        alertEl.classList.remove('hidden');
+        btn.disabled = false; btn.textContent = 'Create Account';
+        return;
+      }
+
+      closeAddPackerModal();
+      showToast('Account created for ' + username, 'success');
+      await loadPackerList();
+      loadAdminStats();
+      btn.disabled = false; btn.textContent = 'Create Account';
+    }
+  </script>
+</body>
+</html>

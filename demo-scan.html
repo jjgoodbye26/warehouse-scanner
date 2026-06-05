@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Warehouse Scanner — Scan (Demo)</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header class="header">
+    <a class="header-brand" href="#">
+      <div class="logo-wrap"><img src="logo.png" alt="Goodbye Inventory" /></div>
+    </a>
+    <div class="header-right">
+      <div class="header-user">
+        <div class="header-avatar">S</div>
+        <span>sarah_k</span>
+      </div>
+      <button class="btn btn-ghost btn-sm">Sign Out</button>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="scan-page">
+      <div class="page-header">
+        <div>
+          <h1 class="page-heading">Pack Orders <span>👋</span></h1>
+          <div style="font-size:0.83rem;color:var(--text3);margin-top:3px;">Good afternoon, sarah_k · Wednesday, June 4</div>
+        </div>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-card green"><span class="stat-icon">📦</span><div class="stat-num">47</div><div class="stat-label">Packed Today</div></div>
+        <div class="stat-card orange"><span class="stat-icon">🟠</span><div class="stat-num">29</div><div class="stat-label">WhatNot</div></div>
+        <div class="stat-card teal"><span class="stat-icon">🎵</span><div class="stat-num">18</div><div class="stat-label">TikTok</div></div>
+        <div class="stat-card purple"><span class="stat-icon">⚡</span><div class="stat-num">12</div><div class="stat-label">Orders / Hour</div></div>
+      </div>
+
+      <div class="card card-glow">
+        <div class="section-label">Select Platform</div>
+        <div class="platform-toggle">
+          <button class="platform-btn active-whatnot" id="btn-whatnot" onclick="setPlatform('WhatNot',this)">
+            🟠 WhatNot <span class="platform-badge">29</span>
+          </button>
+          <button class="platform-btn" id="btn-tiktok" onclick="setPlatform('TikTok',this)">
+            🎵 TikTok <span class="platform-badge">18</span>
+          </button>
+        </div>
+
+        <div class="section-label">Scan Barcode</div>
+        <div class="scan-input-wrap">
+          <span class="scan-icon-left">🔍</span>
+          <input type="text" class="scan-input" placeholder="Aim scanner at USPS barcode and scan…" />
+        </div>
+        <p class="scan-hint">Scanner auto-submits on Enter · USB barcode scanners work automatically</p>
+      </div>
+
+      <div class="recent-scans">
+        <div class="section-label" style="margin-bottom:14px;">Recent Scans — Today</div>
+        <div class="scan-list-wrap">
+          <div class="scan-list-header">
+            <span>Tracking Number</span><span>Platform</span><span>Time</span>
+          </div>
+          <div>
+            <div class="scan-item"><span class="scan-tracking">9400111899223456789012</span><span class="badge badge-whatnot">WhatNot</span><span class="scan-time">2:47:31 PM</span></div>
+            <div class="scan-item"><span class="scan-tracking">9400111899223456789011</span><span class="badge badge-tiktok">TikTok</span><span class="scan-time">2:45:12 PM</span></div>
+            <div class="scan-item"><span class="scan-tracking">9400111899223456789010</span><span class="badge badge-whatnot">WhatNot</span><span class="scan-time">2:43:58 PM</span></div>
+            <div class="scan-item"><span class="scan-tracking">9400111899223456789009</span><span class="badge badge-tiktok">TikTok</span><span class="scan-time">2:41:22 PM</span></div>
+            <div class="scan-item"><span class="scan-tracking">9400111899223456789008</span><span class="badge badge-whatnot">WhatNot</span><span class="scan-time">2:39:05 PM</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function setPlatform(p, el) {
+      document.getElementById('btn-whatnot').className = 'platform-btn' + (p === 'WhatNot' ? ' active-whatnot' : '');
+      document.getElementById('btn-tiktok').className  = 'platform-btn' + (p === 'TikTok'  ? ' active-tiktok'  : '');
+    }
+  </script>
+</body>
+</html>

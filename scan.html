@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Warehouse Scanner — Scan</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <header class="header">
+    <a class="header-brand" href="scan.html">
+      <div class="logo-wrap"><img src="logo.png" alt="Goodbye Inventory" /></div>
+    </a>
+    <div class="header-right">
+      <div class="header-user">
+        <div class="header-avatar" id="header-initial">?</div>
+        <span id="header-user"></span>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="signOut()">Sign Out</button>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="scan-page">
+
+      <!-- Page header -->
+      <div class="page-header">
+        <div>
+          <h1 class="page-heading">Pack Orders <span id="greeting"></span></h1>
+          <div style="font-size:0.83rem;color:var(--text3);margin-top:3px;" id="date-display"></div>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-row">
+        <div class="stat-card green">
+          <span class="stat-icon">📦</span>
+          <div class="stat-num" id="today-total">0</div>
+          <div class="stat-label">Packed Today</div>
+        </div>
+        <div class="stat-card orange">
+          <span class="stat-icon">🟠</span>
+          <div class="stat-num" id="today-whatnot">0</div>
+          <div class="stat-label">WhatNot</div>
+        </div>
+        <div class="stat-card teal">
+          <span class="stat-icon">🎵</span>
+          <div class="stat-num" id="today-tiktok">0</div>
+          <div class="stat-label">TikTok</div>
+        </div>
+        <div class="stat-card purple">
+          <span class="stat-icon">⚡</span>
+          <div class="stat-num" id="hour-rate">—</div>
+          <div class="stat-label">Orders / Hour</div>
+        </div>
+      </div>
+
+      <!-- Scan card -->
+      <div class="card card-glow">
+
+        <!-- Platform selector -->
+        <div class="section-label">Select Platform</div>
+        <div class="platform-toggle">
+          <button class="platform-btn active-whatnot" id="btn-whatnot" onclick="setPlatform('WhatNot')">
+            🟠 WhatNot
+            <span class="platform-badge" id="badge-whatnot">0</span>
+          </button>
+          <button class="platform-btn" id="btn-tiktok" onclick="setPlatform('TikTok')">
+            🎵 TikTok
+            <span class="platform-badge" id="badge-tiktok">0</span>
+          </button>
+        </div>
+
+        <!-- Scan input -->
+        <div class="section-label">Scan Barcode</div>
+        <div class="scan-input-wrap">
+          <span class="scan-icon-left">🔍</span>
+          <input
+            type="text"
+            id="scan-input"
+            class="scan-input"
+            placeholder="Aim scanner at USPS barcode and scan…"
+            autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+          />
+        </div>
+        <p class="scan-hint">Scanner auto-submits on Enter · USB barcode scanners work automatically</p>
+
+        <div id="scan-alert" class="alert hidden" style="margin-top:14px;margin-bottom:0;"></div>
+      </div>
+
+      <!-- Recent scans -->
+      <div class="recent-scans">
+        <div class="section-label" style="margin-bottom:14px;">Recent Scans — Today</div>
+        <div class="scan-list-wrap" id="scan-list-wrap">
+          <div class="scan-list-header">
+            <span>Tracking Number</span>
+            <span>Platform</span>
+            <span>Time</span>
+          </div>
+          <div id="scan-list">
+            <div class="empty-state">
+              <div class="empty-icon">📋</div>
+              <p>No scans yet today — start scanning!</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    let currentProfile = null;
+    let currentPlatform = 'WhatNot';
+    let todayScans = [];
+
+    (async () => {
+      currentProfile = await requireAuth('packer');
+      if (!currentProfile) return;
+
+      const initial = currentProfile.username.charAt(0).toUpperCase();
+      document.getElementById('header-initial').textContent = initial;
+      document.getElementById('header-user').textContent = currentProfile.username;
+
+      const hour = new Date().getHours();
+      const greet = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+      document.getElementById('greeting').textContent = '👋';
+      document.getElementById('date-display').textContent = greet + ', ' + currentProfile.username + ' · ' + new Date().toLocaleDateString([], { weekday:'long', month:'long', day:'numeric' });
+
+      await loadTodayScans();
+      focusScanInput();
+    })();
+
+    function focusScanInput() {
+      const input = document.getElementById('scan-input');
+      input.focus();
+      document.addEventListener('click', e => {
+        if (!e.target.closest('button') && !e.target.closest('input')) {
+          setTimeout(() => input.focus(), 50);
+        }
+      });
+    }
+
+    function setPlatform(platform) {
+      currentPlatform = platform;
+      document.getElementById('btn-whatnot').className = 'platform-btn' + (platform === 'WhatNot' ? ' active-whatnot' : '');
+      document.getElementById('btn-tiktok').className = 'platform-btn' + (platform === 'TikTok' ? ' active-tiktok' : '');
+      focusScanInput();
+    }
+
+    async function loadTodayScans() {
+      const { start, end } = todayRange();
+      const { data, error } = await db.from('scans').select('*')
+        .eq('packer_id', currentProfile.id)
+        .gte('scanned_at', start).lt('scanned_at', end)
+        .order('scanned_at', { ascending: false });
+      if (!error && data) { todayScans = data; renderStats(); renderRecentScans(); }
+    }
+
+    function renderStats() {
+      const total = todayScans.length;
+      const whatnot = todayScans.filter(s => s.platform === 'WhatNot').length;
+      const tiktok  = todayScans.filter(s => s.platform === 'TikTok').length;
+      document.getElementById('today-total').textContent = total;
+      document.getElementById('today-whatnot').textContent = whatnot;
+      document.getElementById('today-tiktok').textContent  = tiktok;
+      document.getElementById('badge-whatnot').textContent = whatnot;
+      document.getElementById('badge-tiktok').textContent  = tiktok;
+      if (total > 0) {
+        const cutoff = new Date(Date.now() - 3600000).toISOString();
+        document.getElementById('hour-rate').textContent = todayScans.filter(s => s.scanned_at >= cutoff).length;
+      }
+    }
+
+    function renderRecentScans() {
+      const list = document.getElementById('scan-list');
+      const header = document.querySelector('.scan-list-header');
+      if (todayScans.length === 0) {
+        header && (header.style.display = 'none');
+        list.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><p>No scans yet today — start scanning!</p></div>`;
+        return;
+      }
+      header && (header.style.display = '');
+      list.innerHTML = todayScans.slice(0, 25).map(s => `
+        <div class="scan-item">
+          <span class="scan-tracking">${s.tracking_number}</span>
+          <span class="badge badge-${s.platform === 'WhatNot' ? 'whatnot' : 'tiktok'}">${s.platform}</span>
+          <span class="scan-time">${formatTime(s.scanned_at)}</span>
+        </div>
+      `).join('');
+    }
+
+    const scanInput = document.getElementById('scan-input');
+    scanInput.addEventListener('keydown', async e => { if (e.key === 'Enter') await submitScan(); });
+
+    let scanBuffer = '', scanTimer = null;
+    scanInput.addEventListener('input', () => {
+      clearTimeout(scanTimer);
+      scanBuffer = scanInput.value;
+      scanTimer = setTimeout(async () => { if (scanBuffer.length >= 10) await submitScan(); }, 150);
+    });
+
+    async function submitScan() {
+      const tracking = scanInput.value.trim();
+      if (!tracking) return;
+      if (tracking.length < 10) { showScanAlert('Tracking number too short. Please scan again.', 'error'); return; }
+
+      if (todayScans.some(s => s.tracking_number === tracking)) {
+        playBeep('error'); flashInput('error');
+        showScanAlert('⚠ Already scanned today: ' + tracking, 'error');
+        scanInput.value = ''; return;
+      }
+
+      const { data, error } = await db.from('scans').insert({
+        packer_id: currentProfile.id,
+        packer_username: currentProfile.username,
+        tracking_number: tracking,
+        platform: currentPlatform,
+      }).select().single();
+
+      if (error) { playBeep('error'); flashInput('error'); showScanAlert('Error saving scan. Try again.', 'error'); return; }
+
+      playBeep('success'); flashInput('success'); hideScanAlert();
+      scanInput.value = '';
+      todayScans.unshift(data);
+      renderStats(); renderRecentScans();
+      showToast('✓ ' + currentPlatform + ' packed — …' + tracking.slice(-6), 'success', 2500);
+    }
+
+    function flashInput(type) {
+      scanInput.classList.remove('flash-success', 'flash-error');
+      void scanInput.offsetWidth;
+      scanInput.classList.add('flash-' + type);
+      setTimeout(() => scanInput.classList.remove('flash-' + type), 600);
+    }
+
+    function showScanAlert(msg, type) {
+      const el = document.getElementById('scan-alert');
+      el.className = 'alert alert-' + type;
+      el.innerHTML = '<span>' + (type === 'error' ? '⚠' : '✓') + '</span> ' + msg;
+    }
+    function hideScanAlert() { document.getElementById('scan-alert').className = 'alert hidden'; }
+  </script>
+</body>
+</html>

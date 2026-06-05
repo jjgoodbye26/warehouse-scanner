@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Warehouse Scanner — Admin (Demo)</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header class="header">
+    <a class="header-brand" href="#">
+      <div class="logo-wrap"><img src="logo.png" alt="Goodbye Inventory" /></div>
+      <span class="admin-chip">Admin</span>
+    </a>
+    <div class="header-right">
+      <button class="btn btn-primary btn-sm">+ Add Packer</button>
+      <button class="btn btn-ghost btn-sm">Sign Out</button>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="admin-page">
+
+      <div class="admin-hero">
+        <div class="admin-hero-text">
+          <h1>Admin <span>Dashboard</span></h1>
+          <p>Live packing performance across your team</p>
+        </div>
+        <div style="font-size:0.78rem;color:var(--text3);padding:8px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;">
+          Wed, Jun 4 · 2:51 PM
+        </div>
+      </div>
+
+      <div class="admin-stats">
+        <div class="stat-card green"><span class="stat-icon">📦</span><div class="stat-num">183</div><div class="stat-label">Total Today</div></div>
+        <div class="stat-card purple"><span class="stat-icon">📅</span><div class="stat-num">891</div><div class="stat-label">This Week</div></div>
+        <div class="stat-card orange"><span class="stat-icon">🟠</span><div class="stat-num">112</div><div class="stat-label">WhatNot Today</div></div>
+        <div class="stat-card teal"><span class="stat-icon">🎵</span><div class="stat-num">71</div><div class="stat-label">TikTok Today</div></div>
+        <div class="stat-card"><span class="stat-icon">👥</span><div class="stat-num">4</div><div class="stat-label">Active Packers</div></div>
+      </div>
+
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab('overview',this)">Overview</button>
+        <button class="tab" onclick="switchTab('scans',this)">All Scans</button>
+        <button class="tab" onclick="switchTab('packers',this)">Packers</button>
+      </div>
+
+      <!-- Overview -->
+      <div id="tab-overview" class="tab-panel active">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+          <div class="section-label" style="margin:0">Packer Performance</div>
+          <select class="form-select" style="width:auto;padding:8px 14px;font-size:0.83rem;border-radius:8px;">
+            <option>Today</option><option>This Week</option><option>All Time</option>
+          </select>
+        </div>
+        <div class="packer-grid">
+
+          <div class="packer-card">
+            <div class="packer-card-top">
+              <div class="packer-avatar">M</div>
+              <div><div class="packer-card-name">mike_j</div><div class="packer-card-role">Packer</div></div>
+            </div>
+            <div class="packer-mini-stats">
+              <div class="packer-mini-stat"><div class="packer-mini-num purple">52</div><div class="packer-mini-label">Total</div></div>
+              <div class="packer-mini-stat"><div class="packer-mini-num orange">31</div><div class="packer-mini-label">WhatNot</div></div>
+              <div class="packer-mini-stat"><div class="packer-mini-num teal">21</div><div class="packer-mini-label">TikTok</div></div>
+            </div>
+            <div class="progress-bar"><div class="progress-fill" style="width:100%"></div></div>
+            <div class="packer-footer"><span>Orders / hr</span><div class="packer-rate"><span class="rate-num">14.1</span></div></div>
+          </div>
+
+          <div class="packer-card">
+            <div class="packer-card-top">
+              <div class="packer-avatar">S</div>
+              <div><div class="packer-card-name">sarah_k</div><div class="packer-card-role">Packer</div></div>
+            </div>
+            <div class="packer-mini-stats">
+              <div class="packer-mini-stat"><div class="packer-mini-num purple">47</div><div class="packer-mini-label">Total</div></div>
+              <div class="packer-mini-stat"><div class="packer-mini-num orange">29</div><div class="packer-mini-label">WhatNot</div></div>
+              <div class="packer-mini-stat"><div class="packer-mini-num teal">18</div><div class="packer-mini-label">TikTok</div></div>
+            </div>
+            <div class="progress-bar"><div class="progress-fill" style="width:90%"></div></div>
+            <div class="packer-footer"><span>Orders / hr</span><div class="packer-rate"><span class="rate-num">12.4</span></div></div>
+          </div>
+
+          <div class="packer-card">
+            <div class="packer-card-top">
+              <div class="packer-avatar">J</div>
+              <div><div class="packer-card-name">jess_t</div><div class="packer-card-role">Packer</div></div>
+            </div>
+            <div class="packer-mini-stats">
+              <div class="packer-mini-stat"><div class="packer-mini-num purple">43</div><div class="packer-mini-label">Total</div></div>
+              <div class="packer-mini-stat"><div class="packer-mini-num orange">27</div><div class="packer-mini-label">WhatNot</div></div>
+              <div class="packer-mini-stat"><div class="packer-mini-num teal">16</div><div class="packer-mini-label">TikTok</div></div>
+            </div>
+            <div class="progress-bar"><div class="progress-fill" style="width:83%"></div></div>
+            <div class="packer-footer"><span>Orders / hr</span><div class="packer-rate"><span class="rate-num">11.5</span></div></div>
+          </div>
+
+          <div class="packer-card">
+            <div class="packer-card-top">
+              <div class="packer-avatar">A</div>
+              <div><div class="packer-card-name">alex_r</div><div class="packer-card-role">Packer</div></div>
+            </div>
+            <div class="packer-mini-stats">
+              <div class="packer-mini-stat"><div class="packer-mini-num purple">41</div><div class="packer-mini-label">Total</div></div>
+              <div class="packer-mini-stat"><div class="packer-mini-num orange">25</div><div class="packer-mini-label">WhatNot</div></div>
+              <div class="packer-mini-stat"><div class="packer-mini-num teal">16</div><div class="packer-mini-label">TikTok</div></div>
+            </div>
+            <div class="progress-bar"><div class="progress-fill" style="width:79%"></div></div>
+            <div class="packer-footer"><span>Orders / hr</span><div class="packer-rate"><span class="rate-num">10.9</span></div></div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Scans -->
+      <div id="tab-scans" class="tab-panel">
+        <div class="filters">
+          <div class="form-group"><label class="form-label">Packer</label><select class="form-select"><option>All Packers</option><option>sarah_k</option><option>mike_j</option></select></div>
+          <div class="form-group"><label class="form-label">Platform</label><select class="form-select"><option>All Platforms</option><option>WhatNot</option><option>TikTok</option></select></div>
+          <div class="form-group"><label class="form-label">From Date</label><input type="date" class="form-input" value="2026-06-04" /></div>
+          <div class="form-group"><label class="form-label">To Date</label><input type="date" class="form-input" value="2026-06-04" /></div>
+          <div class="filters-actions">
+            <button class="btn btn-ghost btn-sm">Clear</button>
+            <button class="btn btn-primary btn-sm">⬇ CSV</button>
+          </div>
+        </div>
+        <div class="count-chip">183 scans</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Packer</th><th>Tracking Number</th><th>Platform</th><th>Date</th><th>Time</th></tr></thead>
+            <tbody>
+              <tr><td class="packer-cell">sarah_k</td><td class="tracking-cell">9400111899223456789012</td><td><span class="badge badge-whatnot">WhatNot</span></td><td style="color:var(--text2)">Jun 4, 2026</td><td style="color:var(--text2)">2:47:31 PM</td></tr>
+              <tr><td class="packer-cell">mike_j</td><td class="tracking-cell">9400111899223456789011</td><td><span class="badge badge-tiktok">TikTok</span></td><td style="color:var(--text2)">Jun 4, 2026</td><td style="color:var(--text2)">2:46:18 PM</td></tr>
+              <tr><td class="packer-cell">alex_r</td><td class="tracking-cell">9400111899223456789010</td><td><span class="badge badge-whatnot">WhatNot</span></td><td style="color:var(--text2)">Jun 4, 2026</td><td style="color:var(--text2)">2:45:02 PM</td></tr>
+              <tr><td class="packer-cell">sarah_k</td><td class="tracking-cell">9400111899223456789009</td><td><span class="badge badge-tiktok">TikTok</span></td><td style="color:var(--text2)">Jun 4, 2026</td><td style="color:var(--text2)">2:43:55 PM</td></tr>
+              <tr><td class="packer-cell">jess_t</td><td class="tracking-cell">9400111899223456789008</td><td><span class="badge badge-whatnot">WhatNot</span></td><td style="color:var(--text2)">Jun 4, 2026</td><td style="color:var(--text2)">2:42:41 PM</td></tr>
+              <tr><td class="packer-cell">mike_j</td><td class="tracking-cell">9400111899223456789007</td><td><span class="badge badge-whatnot">WhatNot</span></td><td style="color:var(--text2)">Jun 4, 2026</td><td style="color:var(--text2)">2:41:30 PM</td></tr>
+              <tr><td class="packer-cell">alex_r</td><td class="tracking-cell">9400111899223456789006</td><td><span class="badge badge-tiktok">TikTok</span></td><td style="color:var(--text2)">Jun 4, 2026</td><td style="color:var(--text2)">2:40:17 PM</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Packers -->
+      <div id="tab-packers" class="tab-panel">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Packer</th><th>Role</th><th>Joined</th><th>Today</th><th>All Time</th></tr></thead>
+            <tbody>
+              <tr><td><div style="display:flex;align-items:center;gap:10px;"><div class="packer-avatar" style="width:30px;height:30px;border-radius:8px;font-size:0.8rem;">S</div><span class="packer-cell">sarah_k</span></div></td><td><span class="badge badge-packer">packer</span></td><td style="color:var(--text2)">May 1, 2026</td><td style="font-weight:700;color:var(--accent2)">47</td><td style="color:var(--text2)">1,204</td></tr>
+              <tr><td><div style="display:flex;align-items:center;gap:10px;"><div class="packer-avatar" style="width:30px;height:30px;border-radius:8px;font-size:0.8rem;">M</div><span class="packer-cell">mike_j</span></div></td><td><span class="badge badge-packer">packer</span></td><td style="color:var(--text2)">May 1, 2026</td><td style="font-weight:700;color:var(--accent2)">52</td><td style="color:var(--text2)">1,389</td></tr>
+              <tr><td><div style="display:flex;align-items:center;gap:10px;"><div class="packer-avatar" style="width:30px;height:30px;border-radius:8px;font-size:0.8rem;">A</div><span class="packer-cell">alex_r</span></div></td><td><span class="badge badge-packer">packer</span></td><td style="color:var(--text2)">May 15, 2026</td><td style="font-weight:700;color:var(--accent2)">41</td><td style="color:var(--text2)">891</td></tr>
+              <tr><td><div style="display:flex;align-items:center;gap:10px;"><div class="packer-avatar" style="width:30px;height:30px;border-radius:8px;font-size:0.8rem;">J</div><span class="packer-cell">jess_t</span></div></td><td><span class="badge badge-packer">packer</span></td><td style="color:var(--text2)">Jun 1, 2026</td><td style="font-weight:700;color:var(--accent2)">43</td><td style="color:var(--text2)">183</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    function switchTab(name, el) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      el.classList.add('active');
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      document.getElementById('tab-' + name).classList.add('active');
+    }
+  </script>
+</body>
+</html>
