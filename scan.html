@@ -5,6 +5,146 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Warehouse Scanner — Scan</title>
   <link rel="stylesheet" href="css/style.css" />
+  <style>
+    /* Camera scanner overlay */
+    .camera-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.92);
+      z-index: 500;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 24px;
+    }
+    .camera-overlay.hidden { display: none; }
+
+    .camera-box {
+      width: 100%; max-width: 500px;
+      background: var(--surface);
+      border-radius: 20px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+    }
+
+    .camera-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .camera-title {
+      font-weight: 700; font-size: 1rem;
+    }
+
+    .camera-platform {
+      font-size: 0.8rem;
+      padding: 4px 12px;
+      border-radius: 99px;
+      font-weight: 700;
+    }
+    .camera-platform.whatnot { background: rgba(255,107,53,0.15); color: var(--whatnot); }
+    .camera-platform.tiktok  { background: rgba(0,212,170,0.1);  color: var(--tiktok); }
+
+    #camera-reader {
+      width: 100%;
+      background: #000;
+      position: relative;
+    }
+
+    /* Scanning line animation */
+    #camera-reader::after {
+      content: '';
+      position: absolute;
+      left: 10%; right: 10%;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      box-shadow: 0 0 8px var(--accent);
+      animation: scanLine 2s ease-in-out infinite;
+      z-index: 10;
+    }
+    @keyframes scanLine {
+      0%   { top: 20%; opacity: 1; }
+      50%  { top: 80%; opacity: 1; }
+      100% { top: 20%; opacity: 1; }
+    }
+
+    .camera-footer {
+      padding: 16px 20px;
+      text-align: center;
+    }
+
+    .camera-status {
+      font-size: 0.875rem;
+      color: var(--text2);
+      margin-bottom: 14px;
+      min-height: 20px;
+    }
+
+    .camera-status.scanning { color: var(--accent2); }
+    .camera-status.success  { color: var(--success); font-weight: 700; }
+    .camera-status.error    { color: var(--error); }
+
+    /* Camera scan button */
+    .scan-mode-toggle {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .scan-mode-btn {
+      flex: 1;
+      padding: 12px;
+      border-radius: 10px;
+      border: 1.5px solid var(--border);
+      background: var(--surface2);
+      color: var(--text3);
+      font-family: var(--font);
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+
+    .scan-mode-btn.active {
+      border-color: var(--accent);
+      color: var(--accent2);
+      background: rgba(99,102,241,0.08);
+    }
+
+    .scan-mode-btn:hover { border-color: var(--border2); color: var(--text2); }
+
+    /* Aim guide overlay */
+    .aim-guide {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 70%; max-width: 300px;
+      aspect-ratio: 3/1;
+      border: 2px solid rgba(99,102,241,0.7);
+      border-radius: 8px;
+      z-index: 11;
+      pointer-events: none;
+    }
+
+    .aim-guide::before, .aim-guide::after {
+      content: '';
+      position: absolute;
+      width: 20px; height: 20px;
+    }
+    .aim-guide::before {
+      top: -2px; left: -2px;
+      border-top: 3px solid var(--accent);
+      border-left: 3px solid var(--accent);
+      border-radius: 4px 0 0 0;
+    }
+    .aim-guide::after {
+      bottom: -2px; right: -2px;
+      border-bottom: 3px solid var(--accent);
+      border-right: 3px solid var(--accent);
+      border-radius: 0 0 4px 0;
+    }
+  </style>
 </head>
 <body>
 
@@ -72,19 +212,31 @@
           </button>
         </div>
 
-        <!-- Scan input -->
-        <div class="section-label">Scan Barcode</div>
-        <div class="scan-input-wrap">
-          <span class="scan-icon-left">🔍</span>
-          <input
-            type="text"
-            id="scan-input"
-            class="scan-input"
-            placeholder="Aim scanner at USPS barcode and scan…"
-            autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
-          />
+        <!-- Scan mode toggle -->
+        <div class="section-label">Scan Method</div>
+        <div class="scan-mode-toggle">
+          <button class="scan-mode-btn active" id="mode-usb" onclick="setMode('usb')">
+            🔌 USB Scanner
+          </button>
+          <button class="scan-mode-btn" id="mode-camera" onclick="openCamera()">
+            📷 Phone Camera
+          </button>
         </div>
-        <p class="scan-hint">Scanner auto-submits on Enter · USB barcode scanners work automatically</p>
+
+        <!-- USB input -->
+        <div id="usb-section">
+          <div class="scan-input-wrap">
+            <span class="scan-icon-left">🔍</span>
+            <input
+              type="text"
+              id="scan-input"
+              class="scan-input"
+              placeholder="Aim scanner at USPS barcode and scan…"
+              autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+            />
+          </div>
+          <p class="scan-hint">USB barcode scanner auto-submits · or type and press Enter</p>
+        </div>
 
         <div id="scan-alert" class="alert hidden" style="margin-top:14px;margin-bottom:0;"></div>
       </div>
@@ -110,13 +262,33 @@
     </div>
   </div>
 
+  <!-- Camera overlay -->
+  <div id="camera-overlay" class="camera-overlay hidden">
+    <div class="camera-box">
+      <div class="camera-header">
+        <span class="camera-title">📷 Scan USPS Barcode</span>
+        <span class="camera-platform" id="camera-platform-badge">WhatNot</span>
+      </div>
+      <div id="camera-reader" style="position:relative;">
+        <div class="aim-guide"></div>
+      </div>
+      <div class="camera-footer">
+        <div class="camera-status scanning" id="camera-status">Point camera at the barcode on the USPS label</div>
+        <button class="btn btn-ghost btn-full" onclick="closeCamera()">✕ Cancel</button>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <script src="js/config.js"></script>
   <script src="js/auth.js"></script>
   <script>
     let currentProfile = null;
     let currentPlatform = 'WhatNot';
     let todayScans = [];
+    let html5QrScanner = null;
+    let cameraOpen = false;
 
     (async () => {
       currentProfile = await requireAuth('packer');
@@ -139,19 +311,87 @@
       const input = document.getElementById('scan-input');
       input.focus();
       document.addEventListener('click', e => {
-        if (!e.target.closest('button') && !e.target.closest('input')) {
+        if (!cameraOpen && !e.target.closest('button') && !e.target.closest('input')) {
           setTimeout(() => input.focus(), 50);
         }
       });
     }
 
+    function setMode(mode) {
+      document.getElementById('mode-usb').className    = 'scan-mode-btn' + (mode === 'usb'    ? ' active' : '');
+      document.getElementById('mode-camera').className = 'scan-mode-btn' + (mode === 'camera' ? ' active' : '');
+    }
+
     function setPlatform(platform) {
       currentPlatform = platform;
       document.getElementById('btn-whatnot').className = 'platform-btn' + (platform === 'WhatNot' ? ' active-whatnot' : '');
-      document.getElementById('btn-tiktok').className = 'platform-btn' + (platform === 'TikTok' ? ' active-tiktok' : '');
+      document.getElementById('btn-tiktok').className  = 'platform-btn' + (platform === 'TikTok'  ? ' active-tiktok'  : '');
+      document.getElementById('camera-platform-badge').textContent = platform;
+      document.getElementById('camera-platform-badge').className = 'camera-platform ' + (platform === 'WhatNot' ? 'whatnot' : 'tiktok');
+      if (!cameraOpen) focusScanInput();
+    }
+
+    // ── Camera scanning ──
+    function openCamera() {
+      setMode('camera');
+      cameraOpen = true;
+      document.getElementById('camera-overlay').classList.remove('hidden');
+      document.getElementById('camera-platform-badge').textContent = currentPlatform;
+      document.getElementById('camera-platform-badge').className = 'camera-platform ' + (currentPlatform === 'WhatNot' ? 'whatnot' : 'tiktok');
+      document.getElementById('camera-status').textContent = 'Point camera at the barcode on the USPS label';
+      document.getElementById('camera-status').className = 'camera-status scanning';
+
+      html5QrScanner = new Html5Qrcode('camera-reader');
+
+      const config = {
+        fps: 15,
+        qrbox: { width: 280, height: 100 },
+        formatsToSupport: [
+          Html5QrcodeSupportedFormats.CODE_128,
+          Html5QrcodeSupportedFormats.CODE_39,
+          Html5QrcodeSupportedFormats.ITF,
+          Html5QrcodeSupportedFormats.EAN_13,
+          Html5QrcodeSupportedFormats.UPC_A,
+        ],
+        aspectRatio: 1.5,
+      };
+
+      html5QrScanner.start(
+        { facingMode: 'environment' },
+        config,
+        async (decodedText) => {
+          // Barcode detected!
+          const tracking = decodedText.trim();
+          document.getElementById('camera-status').textContent = '✓ Detected: ' + tracking;
+          document.getElementById('camera-status').className = 'camera-status success';
+          await closeCamera();
+          await submitScanValue(tracking);
+        },
+        () => {} // ignore scan errors (called frequently while searching)
+      ).catch(err => {
+        document.getElementById('camera-status').textContent = 'Camera error: ' + err;
+        document.getElementById('camera-status').className = 'camera-status error';
+      });
+    }
+
+    async function closeCamera() {
+      cameraOpen = false;
+      document.getElementById('camera-overlay').classList.add('hidden');
+      setMode('usb');
+      if (html5QrScanner) {
+        try { await html5QrScanner.stop(); } catch(e) {}
+        try { html5QrScanner.clear(); } catch(e) {}
+        html5QrScanner = null;
+      }
       focusScanInput();
     }
 
+    // Close camera on overlay background tap
+    document.getElementById('camera-overlay').addEventListener('click', function(e) {
+      if (e.target === this) closeCamera();
+    });
+
+    // ── Load today's scans ──
     async function loadTodayScans() {
       const { start, end } = todayRange();
       const { data, error } = await db.from('scans').select('*')
@@ -194,6 +434,7 @@
       `).join('');
     }
 
+    // ── USB scanner input ──
     const scanInput = document.getElementById('scan-input');
     scanInput.addEventListener('keydown', async e => { if (e.key === 'Enter') await submitScan(); });
 
@@ -205,14 +446,19 @@
     });
 
     async function submitScan() {
-      const tracking = scanInput.value.trim();
+      await submitScanValue(scanInput.value.trim());
+      scanInput.value = '';
+    }
+
+    async function submitScanValue(tracking) {
       if (!tracking) return;
       if (tracking.length < 10) { showScanAlert('Tracking number too short. Please scan again.', 'error'); return; }
 
       if (todayScans.some(s => s.tracking_number === tracking)) {
-        playBeep('error'); flashInput('error');
+        playBeep('error');
+        if (!cameraOpen) flashInput('error');
         showScanAlert('⚠ Already scanned today: ' + tracking, 'error');
-        scanInput.value = ''; return;
+        return;
       }
 
       const { data, error } = await db.from('scans').insert({
@@ -222,12 +468,19 @@
         platform: currentPlatform,
       }).select().single();
 
-      if (error) { playBeep('error'); flashInput('error'); showScanAlert('Error saving scan. Try again.', 'error'); return; }
+      if (error) {
+        playBeep('error');
+        if (!cameraOpen) flashInput('error');
+        showScanAlert('Error saving scan. Try again.', 'error');
+        return;
+      }
 
-      playBeep('success'); flashInput('success'); hideScanAlert();
-      scanInput.value = '';
+      playBeep('success');
+      if (!cameraOpen) flashInput('success');
+      hideScanAlert();
       todayScans.unshift(data);
-      renderStats(); renderRecentScans();
+      renderStats();
+      renderRecentScans();
       showToast('✓ ' + currentPlatform + ' packed — …' + tracking.slice(-6), 'success', 2500);
     }
 
