@@ -28,7 +28,8 @@
       object-fit: cover !important;
     }
 
-    #camera-container canvas {
+    /* Let Quagga use its canvas for processing — just hide the debug overlay */
+    #camera-container canvas.drawingBuffer {
       display: none !important;
     }
 
@@ -350,11 +351,11 @@
           },
         },
         locator: {
-          patchSize: 'large',
-          halfSample: false,
+          patchSize: 'medium',
+          halfSample: true,
         },
-        numOfWorkers: 2,
-        frequency: 10,
+        numOfWorkers: 0,
+        frequency: 8,
         decoder: {
           readers: [
             'code_128_reader',
@@ -384,8 +385,8 @@
           .reduce((sum, c) => sum + (1 - c.error), 0) /
           result.codeResult.decodedCodes.filter(c => c.error !== undefined).length;
 
-        // Only accept high-confidence reads (reduces false positives)
-        if (confidence < 0.65) return;
+        // Only accept decent confidence reads
+        if (confidence < 0.4) return;
 
         setCamStatus('✓ Scanned: ' + code, 'success');
         playBeep('success');
