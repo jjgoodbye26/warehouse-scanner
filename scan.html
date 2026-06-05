@@ -6,144 +6,147 @@
   <title>Warehouse Scanner — Scan</title>
   <link rel="stylesheet" href="css/style.css" />
   <style>
-    /* Camera scanner overlay */
     .camera-overlay {
       position: fixed; inset: 0;
-      background: rgba(0,0,0,0.92);
+      background: #000;
       z-index: 500;
       display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      padding: 24px;
     }
     .camera-overlay.hidden { display: none; }
 
-    .camera-box {
-      width: 100%; max-width: 500px;
-      background: var(--surface);
-      border-radius: 20px;
-      overflow: hidden;
-      border: 1px solid var(--border);
-      box-shadow: 0 24px 64px rgba(0,0,0,0.6);
-    }
-
-    .camera-header {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 16px 20px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .camera-title {
-      font-weight: 700; font-size: 1rem;
-    }
-
-    .camera-platform {
-      font-size: 0.8rem;
-      padding: 4px 12px;
-      border-radius: 99px;
-      font-weight: 700;
-    }
-    .camera-platform.whatnot { background: rgba(255,107,53,0.15); color: var(--whatnot); }
-    .camera-platform.tiktok  { background: rgba(0,212,170,0.1);  color: var(--tiktok); }
-
-    #camera-reader {
+    #camera-video {
       width: 100%;
-      background: #000;
-      position: relative;
+      flex: 1;
+      object-fit: cover;
+      display: block;
     }
 
-    /* Scanning line animation */
-    #camera-reader::after {
-      content: '';
+    .camera-aim {
       position: absolute;
-      left: 10%; right: 10%;
-      height: 2px;
-      background: linear-gradient(90deg, transparent, var(--accent), transparent);
-      box-shadow: 0 0 8px var(--accent);
-      animation: scanLine 2s ease-in-out infinite;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -55%);
+      width: 88%;
+      max-width: 480px;
+      height: 90px;
+      border: 2px solid rgba(99,102,241,0.8);
+      border-radius: 8px;
+      pointer-events: none;
       z-index: 10;
     }
-    @keyframes scanLine {
-      0%   { top: 20%; opacity: 1; }
-      50%  { top: 80%; opacity: 1; }
-      100% { top: 20%; opacity: 1; }
+
+    /* Corner markers */
+    .camera-aim::before, .camera-aim::after {
+      content: '';
+      position: absolute;
+      width: 24px; height: 24px;
+    }
+    .camera-aim::before {
+      top: -3px; left: -3px;
+      border-top: 4px solid #818cf8;
+      border-left: 4px solid #818cf8;
+      border-radius: 4px 0 0 0;
+    }
+    .camera-aim::after {
+      bottom: -3px; right: -3px;
+      border-bottom: 4px solid #818cf8;
+      border-right: 4px solid #818cf8;
+      border-radius: 0 0 4px 0;
     }
 
-    .camera-footer {
+    /* Animated scan line */
+    .scan-line {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -55%);
+      width: 88%;
+      max-width: 480px;
+      height: 2px;
+      background: linear-gradient(90deg, transparent 0%, #6366f1 30%, #818cf8 50%, #6366f1 70%, transparent 100%);
+      box-shadow: 0 0 8px 2px rgba(99,102,241,0.6);
+      animation: scanMove 2s ease-in-out infinite;
+      z-index: 11;
+      pointer-events: none;
+    }
+
+    @keyframes scanMove {
+      0%   { margin-top: -46px; opacity: 1; }
+      50%  { margin-top: 44px;  opacity: 1; }
+      100% { margin-top: -46px; opacity: 1; }
+    }
+
+    /* Dark overlay on sides */
+    .camera-shade {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to bottom,
+        rgba(0,0,0,0.5) 0%,
+        rgba(0,0,0,0.0) 30%,
+        rgba(0,0,0,0.0) 70%,
+        rgba(0,0,0,0.5) 100%
+      );
+      pointer-events: none;
+      z-index: 9;
+    }
+
+    .camera-top-bar {
+      position: absolute;
+      top: 0; left: 0; right: 0;
       padding: 16px 20px;
+      display: flex; align-items: center; justify-content: space-between;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
+      z-index: 20;
+    }
+
+    .camera-top-title {
+      font-weight: 700; font-size: 1rem; color: #fff;
+      display: flex; align-items: center; gap: 10px;
+    }
+
+    .camera-bottom-bar {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      padding: 20px 20px 36px;
+      background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
+      z-index: 20;
       text-align: center;
     }
 
-    .camera-status {
+    .camera-instruction {
+      color: rgba(255,255,255,0.8);
       font-size: 0.875rem;
-      color: var(--text2);
-      margin-bottom: 14px;
-      min-height: 20px;
-    }
-
-    .camera-status.scanning { color: var(--accent2); }
-    .camera-status.success  { color: var(--success); font-weight: 700; }
-    .camera-status.error    { color: var(--error); }
-
-    /* Camera scan button */
-    .scan-mode-toggle {
-      display: flex;
-      gap: 10px;
       margin-bottom: 16px;
     }
 
+    .camera-status-bar {
+      font-size: 0.8rem;
+      color: rgba(255,255,255,0.5);
+      margin-top: 8px;
+      min-height: 18px;
+    }
+    .camera-status-bar.detecting { color: #818cf8; }
+    .camera-status-bar.success   { color: #34d399; font-weight: 700; font-size: 0.9rem; }
+
+    .scan-mode-toggle {
+      display: flex; gap: 10px; margin-bottom: 16px;
+    }
     .scan-mode-btn {
-      flex: 1;
-      padding: 12px;
+      flex: 1; padding: 12px;
       border-radius: 10px;
       border: 1.5px solid var(--border);
       background: var(--surface2);
       color: var(--text3);
       font-family: var(--font);
-      font-size: 0.875rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.15s;
+      font-size: 0.875rem; font-weight: 600;
+      cursor: pointer; transition: all 0.15s;
       display: flex; align-items: center; justify-content: center; gap: 8px;
     }
-
     .scan-mode-btn.active {
       border-color: var(--accent);
       color: var(--accent2);
       background: rgba(99,102,241,0.08);
     }
-
     .scan-mode-btn:hover { border-color: var(--border2); color: var(--text2); }
-
-    /* Aim guide overlay */
-    .aim-guide {
-      position: absolute;
-      top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-      width: 70%; max-width: 300px;
-      aspect-ratio: 3/1;
-      border: 2px solid rgba(99,102,241,0.7);
-      border-radius: 8px;
-      z-index: 11;
-      pointer-events: none;
-    }
-
-    .aim-guide::before, .aim-guide::after {
-      content: '';
-      position: absolute;
-      width: 20px; height: 20px;
-    }
-    .aim-guide::before {
-      top: -2px; left: -2px;
-      border-top: 3px solid var(--accent);
-      border-left: 3px solid var(--accent);
-      border-radius: 4px 0 0 0;
-    }
-    .aim-guide::after {
-      bottom: -2px; right: -2px;
-      border-bottom: 3px solid var(--accent);
-      border-right: 3px solid var(--accent);
-      border-radius: 0 0 4px 0;
-    }
   </style>
 </head>
 <body>
@@ -164,7 +167,6 @@
   <div class="container">
     <div class="scan-page">
 
-      <!-- Page header -->
       <div class="page-header">
         <div>
           <h1 class="page-heading">Pack Orders <span id="greeting"></span></h1>
@@ -172,7 +174,6 @@
         </div>
       </div>
 
-      <!-- Stats -->
       <div class="stats-row">
         <div class="stat-card green">
           <span class="stat-icon">📦</span>
@@ -196,44 +197,29 @@
         </div>
       </div>
 
-      <!-- Scan card -->
       <div class="card card-glow">
-
-        <!-- Platform selector -->
         <div class="section-label">Select Platform</div>
         <div class="platform-toggle">
           <button class="platform-btn active-whatnot" id="btn-whatnot" onclick="setPlatform('WhatNot')">
-            🟠 WhatNot
-            <span class="platform-badge" id="badge-whatnot">0</span>
+            🟠 WhatNot <span class="platform-badge" id="badge-whatnot">0</span>
           </button>
           <button class="platform-btn" id="btn-tiktok" onclick="setPlatform('TikTok')">
-            🎵 TikTok
-            <span class="platform-badge" id="badge-tiktok">0</span>
+            🎵 TikTok <span class="platform-badge" id="badge-tiktok">0</span>
           </button>
         </div>
 
-        <!-- Scan mode toggle -->
         <div class="section-label">Scan Method</div>
         <div class="scan-mode-toggle">
-          <button class="scan-mode-btn active" id="mode-usb" onclick="setMode('usb')">
-            🔌 USB Scanner
-          </button>
-          <button class="scan-mode-btn" id="mode-camera" onclick="openCamera()">
-            📷 Phone Camera
-          </button>
+          <button class="scan-mode-btn active" id="mode-usb" onclick="setMode('usb')">🔌 USB Scanner</button>
+          <button class="scan-mode-btn" id="mode-camera" onclick="openCamera()">📷 Phone Camera</button>
         </div>
 
-        <!-- USB input -->
         <div id="usb-section">
           <div class="scan-input-wrap">
             <span class="scan-icon-left">🔍</span>
-            <input
-              type="text"
-              id="scan-input"
-              class="scan-input"
+            <input type="text" id="scan-input" class="scan-input"
               placeholder="Aim scanner at USPS barcode and scan…"
-              autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
-            />
+              autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
           </div>
           <p class="scan-hint">USB barcode scanner auto-submits · or type and press Enter</p>
         </div>
@@ -241,14 +227,11 @@
         <div id="scan-alert" class="alert hidden" style="margin-top:14px;margin-bottom:0;"></div>
       </div>
 
-      <!-- Recent scans -->
       <div class="recent-scans">
         <div class="section-label" style="margin-bottom:14px;">Recent Scans — Today</div>
-        <div class="scan-list-wrap" id="scan-list-wrap">
+        <div class="scan-list-wrap">
           <div class="scan-list-header">
-            <span>Tracking Number</span>
-            <span>Platform</span>
-            <span>Time</span>
+            <span>Tracking Number</span><span>Platform</span><span>Time</span>
           </div>
           <div id="scan-list">
             <div class="empty-state">
@@ -262,47 +245,53 @@
     </div>
   </div>
 
-  <!-- Camera overlay -->
+  <!-- Full-screen camera overlay -->
   <div id="camera-overlay" class="camera-overlay hidden">
-    <div class="camera-box">
-      <div class="camera-header">
-        <span class="camera-title">📷 Scan USPS Barcode</span>
-        <span class="camera-platform" id="camera-platform-badge">WhatNot</span>
+    <!-- Live video -->
+    <video id="camera-video" autoplay muted playsinline></video>
+
+    <!-- Visual overlays -->
+    <div class="camera-shade"></div>
+    <div class="camera-aim"></div>
+    <div class="scan-line"></div>
+
+    <!-- Top bar -->
+    <div class="camera-top-bar">
+      <div class="camera-top-title">
+        📷 Scan USPS Barcode
+        <span id="cam-platform-badge" class="badge badge-whatnot">WhatNot</span>
       </div>
-      <div id="camera-reader" style="position:relative;">
-        <div class="aim-guide"></div>
-      </div>
-      <div class="camera-footer">
-        <div class="camera-status scanning" id="camera-status">Point camera at the barcode on the USPS label</div>
-        <button class="btn btn-ghost btn-full" onclick="closeCamera()">✕ Cancel</button>
-      </div>
+      <button class="btn btn-ghost btn-sm" style="color:#fff;border-color:rgba(255,255,255,0.2);" onclick="closeCamera()">✕ Cancel</button>
+    </div>
+
+    <!-- Bottom bar -->
+    <div class="camera-bottom-bar">
+      <div class="camera-instruction">Hold camera steady · Center the barcode in the box</div>
+      <div class="camera-status-bar detecting" id="cam-status">Initializing camera…</div>
     </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script src="https://unpkg.com/@zxing/library@0.20.0/umd/index.min.js"></script>
   <script src="js/config.js"></script>
   <script src="js/auth.js"></script>
   <script>
     let currentProfile = null;
     let currentPlatform = 'WhatNot';
     let todayScans = [];
-    let html5QrScanner = null;
     let cameraOpen = false;
+    let zxingReader = null;
+    let cameraStream = null;
 
     (async () => {
       currentProfile = await requireAuth('packer');
       if (!currentProfile) return;
-
-      const initial = currentProfile.username.charAt(0).toUpperCase();
-      document.getElementById('header-initial').textContent = initial;
+      document.getElementById('header-initial').textContent = currentProfile.username.charAt(0).toUpperCase();
       document.getElementById('header-user').textContent = currentProfile.username;
-
       const hour = new Date().getHours();
       const greet = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
       document.getElementById('greeting').textContent = '👋';
       document.getElementById('date-display').textContent = greet + ', ' + currentProfile.username + ' · ' + new Date().toLocaleDateString([], { weekday:'long', month:'long', day:'numeric' });
-
       await loadTodayScans();
       focusScanInput();
     })();
@@ -311,9 +300,8 @@
       const input = document.getElementById('scan-input');
       input.focus();
       document.addEventListener('click', e => {
-        if (!cameraOpen && !e.target.closest('button') && !e.target.closest('input')) {
+        if (!cameraOpen && !e.target.closest('button') && !e.target.closest('input'))
           setTimeout(() => input.focus(), 50);
-        }
       });
     }
 
@@ -322,74 +310,84 @@
       document.getElementById('mode-camera').className = 'scan-mode-btn' + (mode === 'camera' ? ' active' : '');
     }
 
-    function setPlatform(platform) {
-      currentPlatform = platform;
-      document.getElementById('btn-whatnot').className = 'platform-btn' + (platform === 'WhatNot' ? ' active-whatnot' : '');
-      document.getElementById('btn-tiktok').className  = 'platform-btn' + (platform === 'TikTok'  ? ' active-tiktok'  : '');
-      document.getElementById('camera-platform-badge').textContent = platform;
-      document.getElementById('camera-platform-badge').className = 'camera-platform ' + (platform === 'WhatNot' ? 'whatnot' : 'tiktok');
+    function setPlatform(p) {
+      currentPlatform = p;
+      document.getElementById('btn-whatnot').className = 'platform-btn' + (p === 'WhatNot' ? ' active-whatnot' : '');
+      document.getElementById('btn-tiktok').className  = 'platform-btn' + (p === 'TikTok'  ? ' active-tiktok'  : '');
+      document.getElementById('cam-platform-badge').textContent = p;
+      document.getElementById('cam-platform-badge').className = 'badge badge-' + (p === 'WhatNot' ? 'whatnot' : 'tiktok');
       if (!cameraOpen) focusScanInput();
     }
 
-    // ── Camera scanning ──
-    function openCamera() {
+    // ── Camera (ZXing) ──
+    async function openCamera() {
       setMode('camera');
       cameraOpen = true;
       document.getElementById('camera-overlay').classList.remove('hidden');
-      document.getElementById('camera-platform-badge').textContent = currentPlatform;
-      document.getElementById('camera-platform-badge').className = 'camera-platform ' + (currentPlatform === 'WhatNot' ? 'whatnot' : 'tiktok');
-      document.getElementById('camera-status').textContent = 'Point camera at the barcode on the USPS label';
-      document.getElementById('camera-status').className = 'camera-status scanning';
+      document.getElementById('cam-platform-badge').textContent = currentPlatform;
+      document.getElementById('cam-platform-badge').className = 'badge badge-' + (currentPlatform === 'WhatNot' ? 'whatnot' : 'tiktok');
+      setCamStatus('Initializing camera…', 'detecting');
 
-      html5QrScanner = new Html5Qrcode('camera-reader');
+      try {
+        // Set up hints for USPS barcode formats
+        const hints = new Map();
+        hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
+          ZXing.BarcodeFormat.CODE_128,
+          ZXing.BarcodeFormat.CODE_39,
+          ZXing.BarcodeFormat.ITF,
+          ZXing.BarcodeFormat.EAN_13,
+          ZXing.BarcodeFormat.UPC_A,
+          ZXing.BarcodeFormat.CODE_93,
+        ]);
+        hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
 
-      const config = {
-        fps: 15,
-        qrbox: { width: 280, height: 100 },
-        formatsToSupport: [
-          Html5QrcodeSupportedFormats.CODE_128,
-          Html5QrcodeSupportedFormats.CODE_39,
-          Html5QrcodeSupportedFormats.ITF,
-          Html5QrcodeSupportedFormats.EAN_13,
-          Html5QrcodeSupportedFormats.UPC_A,
-        ],
-        aspectRatio: 1.5,
-      };
+        zxingReader = new ZXing.BrowserMultiFormatReader(hints, {
+          delayBetweenScanAttempts: 100,
+          delayBetweenScanSuccess: 500,
+        });
 
-      html5QrScanner.start(
-        { facingMode: 'environment' },
-        config,
-        async (decodedText) => {
-          // Barcode detected!
-          const tracking = decodedText.trim();
-          document.getElementById('camera-status').textContent = '✓ Detected: ' + tracking;
-          document.getElementById('camera-status').className = 'camera-status success';
-          await closeCamera();
-          await submitScanValue(tracking);
-        },
-        () => {} // ignore scan errors (called frequently while searching)
-      ).catch(err => {
-        document.getElementById('camera-status').textContent = 'Camera error: ' + err;
-        document.getElementById('camera-status').className = 'camera-status error';
-      });
+        const videoEl = document.getElementById('camera-video');
+
+        // Get back camera
+        const devices = await ZXing.BrowserCodeReader.listVideoInputDevices();
+        const backCam = devices.find(d => /back|rear|environment/i.test(d.label)) || devices[devices.length - 1];
+        const deviceId = backCam ? backCam.deviceId : undefined;
+
+        setCamStatus('Ready — center the USPS barcode in the box', 'detecting');
+
+        await zxingReader.decodeFromVideoDevice(deviceId, videoEl, async (result, err) => {
+          if (result) {
+            const tracking = result.getText().trim();
+            setCamStatus('✓ Scanned: ' + tracking, 'success');
+            playBeep('success');
+            await closeCamera();
+            await submitScanValue(tracking);
+          }
+          // err fires continuously while scanning — ignore it
+        });
+
+      } catch (e) {
+        setCamStatus('Camera error: ' + e.message, '');
+        console.error(e);
+      }
     }
 
     async function closeCamera() {
       cameraOpen = false;
       document.getElementById('camera-overlay').classList.add('hidden');
       setMode('usb');
-      if (html5QrScanner) {
-        try { await html5QrScanner.stop(); } catch(e) {}
-        try { html5QrScanner.clear(); } catch(e) {}
-        html5QrScanner = null;
+      if (zxingReader) {
+        try { zxingReader.reset(); } catch(e) {}
+        zxingReader = null;
       }
       focusScanInput();
     }
 
-    // Close camera on overlay background tap
-    document.getElementById('camera-overlay').addEventListener('click', function(e) {
-      if (e.target === this) closeCamera();
-    });
+    function setCamStatus(msg, cls) {
+      const el = document.getElementById('cam-status');
+      el.textContent = msg;
+      el.className = 'camera-status-bar' + (cls ? ' ' + cls : '');
+    }
 
     // ── Load today's scans ──
     async function loadTodayScans() {
@@ -402,10 +400,10 @@
     }
 
     function renderStats() {
-      const total = todayScans.length;
+      const total   = todayScans.length;
       const whatnot = todayScans.filter(s => s.platform === 'WhatNot').length;
       const tiktok  = todayScans.filter(s => s.platform === 'TikTok').length;
-      document.getElementById('today-total').textContent = total;
+      document.getElementById('today-total').textContent   = total;
       document.getElementById('today-whatnot').textContent = whatnot;
       document.getElementById('today-tiktok').textContent  = tiktok;
       document.getElementById('badge-whatnot').textContent = whatnot;
@@ -417,7 +415,7 @@
     }
 
     function renderRecentScans() {
-      const list = document.getElementById('scan-list');
+      const list   = document.getElementById('scan-list');
       const header = document.querySelector('.scan-list-header');
       if (todayScans.length === 0) {
         header && (header.style.display = 'none');
@@ -430,29 +428,25 @@
           <span class="scan-tracking">${s.tracking_number}</span>
           <span class="badge badge-${s.platform === 'WhatNot' ? 'whatnot' : 'tiktok'}">${s.platform}</span>
           <span class="scan-time">${formatTime(s.scanned_at)}</span>
-        </div>
-      `).join('');
+        </div>`).join('');
     }
 
-    // ── USB scanner input ──
+    // ── USB input ──
     const scanInput = document.getElementById('scan-input');
-    scanInput.addEventListener('keydown', async e => { if (e.key === 'Enter') await submitScan(); });
+    scanInput.addEventListener('keydown', async e => { if (e.key === 'Enter') { await submitScanValue(scanInput.value.trim()); scanInput.value = ''; } });
 
     let scanBuffer = '', scanTimer = null;
     scanInput.addEventListener('input', () => {
       clearTimeout(scanTimer);
       scanBuffer = scanInput.value;
-      scanTimer = setTimeout(async () => { if (scanBuffer.length >= 10) await submitScan(); }, 150);
+      scanTimer = setTimeout(async () => {
+        if (scanBuffer.length >= 10) { await submitScanValue(scanInput.value.trim()); scanInput.value = ''; }
+      }, 150);
     });
 
-    async function submitScan() {
-      await submitScanValue(scanInput.value.trim());
-      scanInput.value = '';
-    }
-
+    // ── Core scan handler ──
     async function submitScanValue(tracking) {
-      if (!tracking) return;
-      if (tracking.length < 10) { showScanAlert('Tracking number too short. Please scan again.', 'error'); return; }
+      if (!tracking || tracking.length < 5) return;
 
       if (todayScans.some(s => s.tracking_number === tracking)) {
         playBeep('error');
@@ -472,6 +466,7 @@
         playBeep('error');
         if (!cameraOpen) flashInput('error');
         showScanAlert('Error saving scan. Try again.', 'error');
+        console.error(error);
         return;
       }
 
@@ -490,7 +485,6 @@
       scanInput.classList.add('flash-' + type);
       setTimeout(() => scanInput.classList.remove('flash-' + type), 600);
     }
-
     function showScanAlert(msg, type) {
       const el = document.getElementById('scan-alert');
       el.className = 'alert alert-' + type;
