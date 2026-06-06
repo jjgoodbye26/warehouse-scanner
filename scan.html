@@ -14,24 +14,15 @@
     }
     .camera-overlay.hidden { display: none; }
 
-    #camera-container {
+    #camera-video {
       width: 100%;
       flex: 1;
+      object-fit: cover;
+      display: block;
       background: #000;
-      position: relative;
-      overflow: hidden;
     }
 
-    #camera-container video {
-      width: 100% !important;
-      height: 100% !important;
-      object-fit: cover !important;
-    }
-
-    /* Let Quagga use its canvas for processing — just hide the debug overlay */
-    #camera-container canvas.drawingBuffer {
-      display: none !important;
-    }
+    #photo-input { display: none; }
 
     .camera-aim {
       position: absolute;
@@ -259,8 +250,8 @@
 
   <!-- Full-screen camera overlay -->
   <div id="camera-overlay" class="camera-overlay hidden">
-    <!-- Quagga2 injects its own video into this div -->
-    <div id="camera-container"></div>
+    <video id="camera-video" autoplay muted playsinline></video>
+    <input id="photo-input" type="file" accept="image/*" capture="environment" />
 
     <!-- Visual overlays -->
     <div class="camera-shade"></div>
@@ -284,7 +275,6 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js"></script>
   <script src="js/config.js"></script>
   <script src="js/auth.js"></script>
   <script>
@@ -292,7 +282,8 @@
     let currentPlatform = 'WhatNot';
     let todayScans = [];
     let cameraOpen = false;
-    let quaggaRunning = false;
+    let cameraStream = null;
+    let scanLoopActive = false;
 
     (async () => {
       currentProfile = await requireAuth('packer');
@@ -330,76 +321,129 @@
       if (!cameraOpen) focusScanInput();
     }
 
-    // ── Camera (Quagga2 — optimized for USPS Code 128) ──
-    function openCamera() {
+    // ── Camera Scanner ──
+    // Android Chrome: uses native BarcodeDetector API (best accuracy)
+    // iPhone/Safari: uses photo capture → decode from image
+
+    const videoEl = document.getElementById('camera-video');
+    const photoInput = document.getElementById('photo-input');
+
+    async function openCamera() {
       setMode('camera');
       cameraOpen = true;
+      scanLoopActive = false;
       document.getElementById('camera-overlay').classList.remove('hidden');
       document.getElementById('cam-platform-badge').textContent = currentPlatform;
       document.getElementById('cam-platform-badge').className = 'badge badge-' + (currentPlatform === 'WhatNot' ? 'whatnot' : 'tiktok');
       setCamStatus('Starting camera…', 'detecting');
 
-      Quagga.init({
-        inputStream: {
-          name: 'Live',
-          type: 'LiveStream',
-          target: document.getElementById('camera-container'),
-          constraints: {
-            facingMode: 'environment',
-            width:  { min: 640, ideal: 1920, max: 1920 },
-            height: { min: 480, ideal: 1080, max: 1080 },
-          },
-        },
-        locator: {
-          patchSize: 'medium',
-          halfSample: true,
-        },
-        numOfWorkers: 0,
-        frequency: 8,
-        decoder: {
-          readers: [
-            'code_128_reader',
-            'code_39_reader',
-            'code_93_reader',
-            'ean_reader',
-            'upc_reader',
-          ],
-          multiple: false,
-        },
-        locate: true,
-      }, function(err) {
-        if (err) {
-          setCamStatus('Camera error: ' + err, '');
-          console.error(err);
-          return;
-        }
-        Quagga.start();
-        setCamStatus('Ready — hold camera 6–10 inches from barcode', 'detecting');
-      });
-
-      // Detected with high confidence
-      Quagga.onDetected(async function(result) {
-        const code = result.codeResult.code;
-        const confidence = result.codeResult.decodedCodes
-          .filter(c => c.error !== undefined)
-          .reduce((sum, c) => sum + (1 - c.error), 0) /
-          result.codeResult.decodedCodes.filter(c => c.error !== undefined).length;
-
-        // Only accept decent confidence reads
-        if (confidence < 0.4) return;
-
-        setCamStatus('✓ Scanned: ' + code, 'success');
-        playBeep('success');
+      // Check if native BarcodeDetector is available (Android Chrome, Chrome desktop)
+      if ('BarcodeDetector' in window) {
+        await startLiveScanner();
+      } else {
+        // iOS Safari — use photo capture
         closeCamera();
-        await submitScanValue(code.trim());
-      });
+        triggerPhotoCapture();
+      }
     }
+
+    async function startLiveScanner() {
+      try {
+        cameraStream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: { ideal: 'environment' },
+            width:  { ideal: 1280 },
+            height: { ideal: 720 },
+          }
+        });
+
+        videoEl.srcObject = cameraStream;
+        await videoEl.play();
+
+        // Get supported formats — include all USPS-relevant ones
+        let formats = ['code_128', 'code_39', 'itf', 'ean_13', 'upc_a', 'codabar'];
+        try {
+          const supported = await BarcodeDetector.getSupportedFormats();
+          formats = formats.filter(f => supported.includes(f));
+        } catch(e) {}
+
+        const detector = new BarcodeDetector({ formats });
+        setCamStatus('Ready — point at the USPS barcode', 'detecting');
+        scanLoopActive = true;
+        runScanLoop(detector);
+
+      } catch(e) {
+        setCamStatus('Camera error: ' + e.message, '');
+        console.error(e);
+      }
+    }
+
+    async function runScanLoop(detector) {
+      if (!scanLoopActive || !cameraOpen) return;
+
+      try {
+        if (videoEl.readyState === videoEl.HAVE_ENOUGH_DATA) {
+          const barcodes = await detector.detect(videoEl);
+          if (barcodes.length > 0) {
+            const tracking = barcodes[0].rawValue.trim();
+            setCamStatus('✓ Got it: ' + tracking, 'success');
+            playBeep('success');
+            closeCamera();
+            await submitScanValue(tracking);
+            return;
+          }
+        }
+      } catch(e) {}
+
+      setTimeout(() => runScanLoop(detector), 120);
+    }
+
+    // iOS fallback: photo capture
+    function triggerPhotoCapture() {
+      setCamStatus('Opening camera…', 'detecting');
+      photoInput.value = '';
+      photoInput.click();
+    }
+
+    photoInput.addEventListener('change', async function() {
+      const file = this.files[0];
+      if (!file) return;
+      setCamStatus('Reading barcode…', 'detecting');
+
+      try {
+        const img = await createImageBitmap(file);
+        let tracking = null;
+
+        if ('BarcodeDetector' in window) {
+          const detector = new BarcodeDetector({
+            formats: ['code_128', 'code_39', 'itf', 'ean_13', 'upc_a']
+          });
+          const barcodes = await detector.detect(img);
+          if (barcodes.length > 0) tracking = barcodes[0].rawValue.trim();
+        }
+
+        if (tracking) {
+          playBeep('success');
+          await submitScanValue(tracking);
+        } else {
+          showScanAlert('⚠ Could not read barcode. Try again with better lighting.', 'error');
+          playBeep('error');
+        }
+      } catch(e) {
+        showScanAlert('⚠ Error reading photo: ' + e.message, 'error');
+      }
+    });
 
     function closeCamera() {
       cameraOpen = false;
+      scanLoopActive = false;
       document.getElementById('camera-overlay').classList.add('hidden');
       setMode('usb');
-      try { Quagga.stop(); } catch(e) {}
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(t => t.stop());
+        cameraStream = null;
+      }
+      videoEl.srcObject = null;
       focusScanInput();
     }
 
