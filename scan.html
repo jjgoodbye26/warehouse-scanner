@@ -337,6 +337,7 @@
     const photoInput = document.getElementById('photo-input');
 
     async function openCamera() {
+      if (cameraOpen) return; // prevent double-tap opening two streams
       setMode('camera');
       cameraOpen     = true;
       scanLoopActive = false;
