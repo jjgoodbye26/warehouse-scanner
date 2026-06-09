@@ -47,12 +47,16 @@
           </button>
         </div>
 
-        <div class="section-label">Scan Barcode</div>
+        <div class="section-label">Scan Method</div>
+        <div style="display:flex;gap:10px;margin-bottom:16px;">
+          <button style="flex:1;padding:12px;border-radius:10px;border:1.5px solid var(--accent);background:rgba(99,102,241,0.08);color:var(--accent2);font-family:var(--font);font-size:0.875rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">🔌 USB Scanner</button>
+          <button style="flex:1;padding:12px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text3);font-family:var(--font);font-size:0.875rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">📷 Phone Camera</button>
+        </div>
         <div class="scan-input-wrap">
           <span class="scan-icon-left">🔍</span>
           <input type="text" class="scan-input" placeholder="Aim scanner at USPS barcode and scan…" />
         </div>
-        <p class="scan-hint">Scanner auto-submits on Enter · USB barcode scanners work automatically</p>
+        <p class="scan-hint">USB barcode scanner auto-submits · or type and press Enter</p>
       </div>
 
       <div class="recent-scans">

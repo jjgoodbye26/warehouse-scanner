@@ -1,4 +1,8 @@
-.DS_Store
+node_modules/
+dist/
+.env.local
+.env.*.local
 *.log
+.DS_Store
 demo-*.html
 scan-demo.html
