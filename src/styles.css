@@ -96,8 +96,27 @@ html, body, #root {
   background: var(--color-surface); border: 1px solid var(--color-border);
   border-radius: var(--radius-lg); padding: 40px;
 }
+/* Logo */
+.login-logo { display: flex; justify-content: center; margin-bottom: 24px; }
+.login-logo-img {
+  height: 72px; width: auto;
+  filter: brightness(0) invert(1);
+}
+
 .login-title { font-size: 28px; font-weight: 700; margin-bottom: 6px; }
-.login-subtitle { color: var(--color-muted); margin-bottom: 32px; font-size: 15px; }
+.login-subtitle { color: var(--color-muted); margin-bottom: 32px; font-size: 15px; text-align: center; }
+
+/* Team selector */
+.team-selector { display: flex; flex-direction: column; gap: 8px; }
+.team-buttons { display: flex; gap: 12px; }
+.team-btn {
+  flex: 1; padding: 16px; border-radius: var(--radius); border: 2px solid var(--color-border);
+  font-size: 18px; font-weight: 700; cursor: pointer; background: var(--color-bg);
+  color: var(--color-muted); transition: all 0.15s;
+}
+.team-btn:hover { border-color: var(--color-text); color: var(--color-text); }
+.team-btn-whatnot.team-btn-active { background: #5b21b6; border-color: #7c3aed; color: #fff; }
+.team-btn-tiktok.team-btn-active  { background: #9f1239; border-color: #e11d48; color: #fff; }
 .login-form { display: flex; flex-direction: column; gap: 20px; }
 
 .conflict-block {
@@ -286,6 +305,57 @@ html, body, #root {
   margin-bottom: 16px;
 }
 @keyframes loadbar { 0% { transform: scaleX(0); } 50% { transform: scaleX(0.7); } 100% { transform: scaleX(1); } }
+
+/* ─── Team Badges ──────────────────────────────────────────────────────────── */
+.team-badge {
+  display: inline-flex; align-items: center;
+  padding: 3px 10px; border-radius: 20px;
+  font-size: 12px; font-weight: 700; letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.team-badge-whatnot { background: #4c1d95; color: #c4b5fd; border: 1px solid #7c3aed; }
+.team-badge-tiktok  { background: #881337; color: #fda4af; border: 1px solid #e11d48; }
+
+/* Status bar logo */
+.status-logo {
+  height: 28px; width: auto;
+  filter: brightness(0) invert(1);
+  opacity: 0.85;
+  margin-right: 4px;
+}
+
+/* Supervisor logo */
+.supervisor-logo { display: flex; justify-content: center; margin-bottom: 20px; }
+.supervisor-logo-img {
+  height: 60px; width: auto;
+  filter: brightness(0) invert(1);
+}
+
+/* Dashboard header logo */
+.dashboard-header-left { display: flex; align-items: center; gap: 16px; }
+.dashboard-logo {
+  height: 40px; width: auto;
+  filter: brightness(0) invert(1);
+  opacity: 0.9;
+}
+
+/* Team filter bar */
+.team-filter-bar { display: flex; gap: 8px; margin-bottom: 20px; }
+.team-filter-btn {
+  padding: 8px 20px; border-radius: 20px; border: 1px solid var(--color-border);
+  background: var(--color-surface); color: var(--color-muted);
+  font-size: 14px; font-weight: 600; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 8px;
+  transition: all 0.15s;
+}
+.team-filter-btn:hover { color: var(--color-text); border-color: var(--color-text); }
+.team-filter-btn.active { border-color: var(--color-primary); color: var(--color-text); background: rgba(37,99,235,0.15); }
+.team-filter-whatnot.active { border-color: #7c3aed; background: rgba(124,58,237,0.15); color: #c4b5fd; }
+.team-filter-tiktok.active  { border-color: #e11d48; background: rgba(225,29,72,0.15);  color: #fda4af; }
+.team-filter-count {
+  background: var(--color-border); color: var(--color-muted);
+  border-radius: 10px; padding: 1px 7px; font-size: 12px;
+}
 
 /* ─── Responsive — 10-inch tablet (1920×1200) ──────────────────────────────── */
 @media (min-width: 900px) {

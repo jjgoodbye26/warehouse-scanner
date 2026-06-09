@@ -5,9 +5,8 @@
  * Body: { records: ScanRecord[] }
  * Each ScanRecord must include scanUUID to allow client-side dedup detection.
  *
- * Rate limit safety: batching is enforced on the client (max 10 per call).
- * This function is the single write path for all 30 stations, centralizing
- * the Sheets API quota rather than splitting it across 30 browser clients.
+ * Sheet columns:
+ * Timestamp | Employee Name | Employee ID | Barcode | Barcode Type | Shift | Station ID | Team | Sync Status | Scan UUID
  */
 import { appendRows, TABS } from './_sheets.js';
 
@@ -31,7 +30,6 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Maximum 10 records per batch' });
   }
 
-  // Validate every record has required fields before touching the Sheet
   for (const rec of records) {
     for (const field of REQUIRED_FIELDS) {
       if (!rec[field]) {
@@ -43,8 +41,7 @@ export default async function handler(req, res) {
     }
   }
 
-  // Map to sheet column order:
-  // Timestamp | Employee Name | Employee ID | Barcode | Barcode Type | Shift | Station ID | Sync Status | Scan UUID
+  // Timestamp | Employee Name | Employee ID | Barcode | Barcode Type | Shift | Station ID | Team | Sync Status | Scan UUID
   const rows = records.map((r) => [
     r.timestamp,
     r.employeeName,
@@ -53,8 +50,9 @@ export default async function handler(req, res) {
     r.barcodeType,
     r.shift,
     r.stationId,
+    r.team || 'Whatnot',
     'SYNCED',
-    r.scanUUID,   // stored for dedup auditing
+    r.scanUUID,
   ]);
 
   try {
@@ -65,8 +63,6 @@ export default async function handler(req, res) {
       uuids: records.map((r) => r.scanUUID),
     });
   } catch (err) {
-    // Surface the HTTP status from Sheets API so the client can distinguish
-    // 429 (rate limit, should backoff) from 500 (server error, should retry)
     const status = err?.response?.status || 500;
     return res.status(status).json({
       error: err.message,

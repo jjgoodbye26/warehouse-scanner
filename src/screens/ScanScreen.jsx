@@ -22,8 +22,6 @@ import { getCurrentShift } from '../utils/shift.js';
 import { reportError, ERROR_CODES } from '../utils/errorLogger.js';
 
 const DEBOUNCE_MS = 300;
-
-// Flash durations
 const FLASH_SUCCESS_MS = 600;
 const FLASH_ERROR_MS = 1200;
 
@@ -34,7 +32,7 @@ export default function ScanScreen() {
   const inputRef = useRef(null);
   const lastScanRef = useRef({ barcode: '', ts: 0 });
   const [inputValue, setInputValue] = useState('');
-  const [flash, setFlash] = useState(null); // null | 'success' | 'error'
+  const [flash, setFlash] = useState(null);
   const [flashMessage, setFlashMessage] = useState('');
   const [lastScanInfo, setLastScanInfo] = useState(null);
   const [scanCount, setScanCount] = useState(0);
@@ -50,15 +48,12 @@ export default function ScanScreen() {
   useEffect(() => {
     focusInput();
 
-    // Refocus when tab becomes visible again
     const handleVisibility = () => { if (document.visibilityState === 'visible') focusInput(); };
     document.addEventListener('visibilitychange', handleVisibility);
 
-    // Refocus on any click anywhere on the page
     const handleClick = () => setTimeout(focusInput, 0);
     document.addEventListener('click', handleClick);
 
-    // MutationObserver: if any DOM change causes focus to leave input, bring it back
     const observer = new MutationObserver(() => setTimeout(focusInput, 50));
     observer.observe(document.body, { childList: true, subtree: true, attributes: false });
 
@@ -74,16 +69,13 @@ export default function ScanScreen() {
   const processScan = useCallback(async (rawBarcode) => {
     const barcode = rawBarcode.trim();
 
-    // Plausibility check — minimum length, printable ASCII only
     if (!isScanPlausible(barcode)) {
       triggerFlash('error', 'Invalid scan — too short or invalid characters');
       return;
     }
 
-    // Debounce: reject identical barcode within DEBOUNCE_MS
     const now = Date.now();
     if (barcode === lastScanRef.current.barcode && now - lastScanRef.current.ts < DEBOUNCE_MS) {
-      // Silent ignore — scanner trigger bounce
       return;
     }
     lastScanRef.current = { barcode, ts: now };
@@ -101,6 +93,7 @@ export default function ScanScreen() {
       barcodeType,
       shift,
       stationId: session.stationId,
+      team: session.team || 'Whatnot',
       syncStatus: 'queued',
       retryCount: 0,
       lastRetryAt: null,
@@ -127,8 +120,7 @@ export default function ScanScreen() {
       triggerFlash('success', barcodeType);
     }
 
-    // Trigger immediate sync if queue has reached batch size
-    flushNow().catch(() => {}); // Sync errors are handled inside syncEngine
+    flushNow().catch(() => {});
   }, [session, config]);
 
   function triggerFlash(type, message) {
@@ -145,7 +137,6 @@ export default function ScanScreen() {
       const val = inputValue.trim();
       setInputValue('');
       if (val) processScan(val);
-      // Refocus immediately (some Android Chrome builds briefly blur on Enter)
       requestAnimationFrame(focusInput);
     }
   }
@@ -153,13 +144,16 @@ export default function ScanScreen() {
   // ─── UI ─────────────────────────────────────────────────────────────────────
 
   const shift = getCurrentShift(config);
+  const team = session?.team || 'Whatnot';
 
   return (
     <div className={`scan-screen ${flash ? `flash-${flash}` : ''}`}>
       {/* Status Bar */}
       <div className="status-bar">
         <div className="status-left">
+          <img src="/logo.svg" alt="Goodbye Inventory" className="status-logo" />
           <span className="status-name">{session?.employeeName}</span>
+          <span className={`team-badge team-badge-${team.toLowerCase()}`}>{team}</span>
           <span className="status-station">{session?.stationId}</span>
           <span className={`status-shift shift-${shift.toLowerCase()}`}>{shift}</span>
         </div>
@@ -200,7 +194,7 @@ export default function ScanScreen() {
           autoCorrect="off"
           autoCapitalize="off"
           spellCheck={false}
-          inputMode="none"   // Prevent soft keyboard on tablets
+          inputMode="none"
           aria-label="Scan input — point scanner and scan"
           placeholder="Point scanner here…"
         />

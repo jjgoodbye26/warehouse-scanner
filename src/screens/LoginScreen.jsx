@@ -7,6 +7,7 @@ export default function LoginScreen() {
   const { employees, login, loginError, setLoginError, authLoading, isMemoryFallback } = useAuth();
   const [selectedEmployeeId, setSelectedEmployeeId] = useState('');
   const [stationId, setStationId] = useState(DEFAULT_STATION);
+  const [team, setTeam] = useState('');
   const [pendingConflict, setPendingConflict] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -14,14 +15,14 @@ export default function LoginScreen() {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (!selectedEmployee || !stationId.trim()) return;
+    if (!selectedEmployee || !stationId.trim() || !team) return;
 
     setSubmitting(true);
     setLoginError(null);
     setPendingConflict(null);
 
     try {
-      const result = await login(selectedEmployee, stationId.trim());
+      const result = await login(selectedEmployee, stationId.trim(), team);
       if (result?.conflict) {
         setPendingConflict(result.existingStation);
       }
@@ -35,8 +36,7 @@ export default function LoginScreen() {
     setSubmitting(true);
     setPendingConflict(null);
     try {
-      // Second call — server already warned, we proceed anyway
-      await login(selectedEmployee, stationId.trim(), true);
+      await login(selectedEmployee, stationId.trim(), team, true);
     } finally {
       setSubmitting(false);
     }
@@ -54,7 +54,11 @@ export default function LoginScreen() {
   return (
     <div className="login-screen">
       <div className="login-card">
-        <h1 className="login-title">Warehouse Scanner</h1>
+        {/* Logo */}
+        <div className="login-logo">
+          <img src="/logo.svg" alt="Goodbye Inventory" className="login-logo-img" />
+        </div>
+
         <p className="login-subtitle">Select your name to begin scanning</p>
 
         {isMemoryFallback && (
@@ -70,6 +74,27 @@ export default function LoginScreen() {
         )}
 
         <form onSubmit={handleSubmit} className="login-form">
+          {/* Team Selector */}
+          <div className="team-selector">
+            <div className="field-label">Team</div>
+            <div className="team-buttons">
+              <button
+                type="button"
+                className={`team-btn team-btn-whatnot ${team === 'Whatnot' ? 'team-btn-active' : ''}`}
+                onClick={() => setTeam('Whatnot')}
+              >
+                Whatnot
+              </button>
+              <button
+                type="button"
+                className={`team-btn team-btn-tiktok ${team === 'TikTok' ? 'team-btn-active' : ''}`}
+                onClick={() => setTeam('TikTok')}
+              >
+                TikTok
+              </button>
+            </div>
+          </div>
+
           <label className="field-label" htmlFor="employee-select">
             Employee
           </label>
@@ -133,7 +158,7 @@ export default function LoginScreen() {
             <button
               type="submit"
               className="btn btn-primary btn-large"
-              disabled={!selectedEmployee || !stationId.trim() || submitting || employees.length === 0}
+              disabled={!selectedEmployee || !stationId.trim() || !team || submitting || employees.length === 0}
             >
               {submitting ? 'Logging in…' : 'Start Scanning'}
             </button>

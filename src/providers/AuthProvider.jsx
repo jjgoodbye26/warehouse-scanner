@@ -1,12 +1,8 @@
 /**
  * AuthProvider — manages employee session lifecycle.
  *
- * On mount: attempts to restore session from IndexedDB.
- * On login: fetches employees (with offline fallback), registers session.
- * On logout: deregisters session, clears IndexedDB, redirects to /login.
- *
  * Session object shape:
- * { employeeId, employeeName, stationId, loginTime, sessionToken }
+ * { employeeId, employeeName, stationId, team, loginTime, sessionToken }
  */
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -29,7 +25,6 @@ export function AuthProvider({ children }) {
   const [loginError, setLoginError] = useState(null);
   const navigate = useNavigate();
 
-  // Restore session and preload employees on mount
   useEffect(() => {
     async function init() {
       try {
@@ -44,7 +39,6 @@ export function AuthProvider({ children }) {
           setLoggerContext({ employeeId: savedSession.employeeId, stationId: savedSession.stationId });
         }
 
-        // Preload employee list — try network first, fall back to cache
         await refreshEmployees(cachedEmps);
         await refreshConfig(cachedConfig);
       } catch (err) {
@@ -62,7 +56,6 @@ export function AuthProvider({ children }) {
       await cacheEmployees(fresh);
       setEmployees(fresh);
     } catch {
-      // Network unavailable — use cache
       const cached = fallback || await getCachedEmployees();
       if (cached && cached.length > 0) {
         setEmployees(cached);
@@ -87,7 +80,8 @@ export function AuthProvider({ children }) {
     }
   }
 
-  const login = useCallback(async (employee, stationId) => {
+  // team param added — stored in session and included in every scan record
+  const login = useCallback(async (employee, stationId, team, force = false) => {
     setLoginError(null);
 
     const sessionToken = crypto.randomUUID();
@@ -97,11 +91,11 @@ export function AuthProvider({ children }) {
       employeeId: employee.employeeId,
       employeeName: employee.name,
       stationId: stationId || 'STATION-01',
+      team: team || 'Whatnot',
       loginTime,
       sessionToken,
     };
 
-    // Register session in Sheet (best-effort — don't block login on failure)
     try {
       const result = await registerSession({
         sessionToken,
@@ -110,19 +104,15 @@ export function AuthProvider({ children }) {
         loginTime,
       });
 
-      if (result.status === 409) {
-        // Duplicate session detected — warn but allow override
+      if (result.status === 409 && !force) {
         setLoginError(
           `Warning: ${employee.name} may already be logged in at ${result.existingStation}. ` +
           `Proceeding will take over that session.`
         );
-        // Don't return — allow login to proceed after warning is shown
-        // The user must click login again to confirm (handled in LoginScreen)
         return { conflict: true, existingStation: result.existingStation };
       }
     } catch (err) {
       await reportError(ERROR_CODES.SESSION_REG_FAILED, 'Session registration failed', { err: err.message });
-      // Continue anyway — session registration is advisory
     }
 
     await saveSession(newSession);
